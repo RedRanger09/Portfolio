@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 280" fill="none">
+  <rect width="700" height="280" rx="16" fill="#18181B" stroke="#27272A"/>
+  <text x="32" y="40" fill="#8B5CF6" font-family="monospace" font-size="12">AGENT TRACE</text>
+  <rect x="32" y="60" width="120" height="48" rx="8" fill="#111113" stroke="#6366F1"/><text x="52" y="90" fill="#E4E4E7" font-size="13">Planner</text>
+  <text x="168" y="90" fill="#71717A">�</text>
+  <rect x="190" y="60" width="120" height="48" rx="8" fill="#111113" stroke="#A855F7"/><text x="205" y="90" fill="#E4E4E7" font-size="13">Tools</text>
+  <text x="326" y="90" fill="#71717A">�</text>
+  <rect x="348" y="60" width="120" height="48" rx="8" fill="#111113" stroke="#FBBF24"/><text x="358" y="90" fill="#E4E4E7" font-size="13">Evaluator</text>
+  <text x="484" y="90" fill="#71717A">�</text>
+  <rect x="506" y="60" width="120" height="48" rx="8" fill="#111113" stroke="#22D3EE"/><text x="520" y="90" fill="#E4E4E7" font-size="13">Response</text>
+  <rect x="32" y="150" width="636" height="90" rx="10" fill="#09090B" stroke="#3F3F46"/>
+  <text x="52" y="185" fill="#A1A1AA" font-size="13">Dashboard concept: timeline + metrics for multi-step agents</text>
+  <text x="52" y="215" fill="#71717A" font-size="12">Status: early UI exploration</text>
+</svg>

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 700 240" fill="none">
+  <rect width="700" height="240" rx="16" fill="#18181B" stroke="#27272A"/>
+  <text x="32" y="40" fill="#34D399" font-family="monospace" font-size="12">CV PIPELINE (PLANNED)</text>
+  <rect x="32" y="70" width="140" height="56" rx="8" fill="#111113" stroke="#3F3F46"/><text x="72" y="104" fill="#E4E4E7" font-size="13">Data</text>
+  <text x="186" y="104" fill="#71717A">�</text>
+  <rect x="208" y="70" width="140" height="56" rx="8" fill="#111113" stroke="#6366F1"/><text x="238" y="104" fill="#E4E4E7" font-size="13">Train</text>
+  <text x="362" y="104" fill="#71717A">�</text>
+  <rect x="384" y="70" width="140" height="56" rx="8" fill="#111113" stroke="#22D3EE"/><text x="408" y="104" fill="#E4E4E7" font-size="13">Deploy</text>
+  <text x="538" y="104" fill="#71717A">�</text>
+  <rect x="560" y="70" width="108" height="56" rx="8" fill="#111113" stroke="#F472B6"/><text x="580" y="104" fill="#E4E4E7" font-size="13">Demo</text>
+</svg>

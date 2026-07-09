@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 400" fill="none">
+  <rect width="900" height="400" rx="16" fill="#18181B" stroke="#27272A"/>
+  <text x="40" y="45" fill="#FBBF24" font-family="monospace" font-size="13">LUMORA  RAG FLOW</text>
+  <rect x="40" y="80" width="140" height="72" rx="10" fill="#09090B" stroke="#3F3F46"/>
+  <text x="70" y="125" fill="#E4E4E7" font-size="14">PDFs / Notes</text>
+  <path d="M180 116 H220" stroke="#6366F1" stroke-width="2" marker-end="url(#a)"/>
+  <rect x="220" y="80" width="140" height="72" rx="10" fill="#09090B" stroke="#6366F1"/>
+  <text x="248" y="125" fill="#E4E4E7" font-size="14">Chunk + Embed</text>
+  <path d="M360 116 H400" stroke="#6366F1" stroke-width="2"/>
+  <rect x="400" y="80" width="120" height="72" rx="10" fill="#09090B" stroke="#A855F7"/>
+  <text x="420" y="125" fill="#E4E4E7" font-size="14">FAISS</text>
+  <path d="M520 116 H560" stroke="#6366F1" stroke-width="2"/>
+  <rect x="560" y="80" width="140" height="72" rx="10" fill="#09090B" stroke="#22D3EE"/>
+  <text x="585" y="125" fill="#E4E4E7" font-size="14">User Query</text>
+  <path d="M700 116 H740" stroke="#6366F1" stroke-width="2"/>
+  <rect x="740" y="80" width="120" height="72" rx="10" fill="#09090B" stroke="#34D399"/>
+  <text x="758" y="125" fill="#E4E4E7" font-size="14">LLM</text>
+  <rect x="120" y="220" width="660" height="120" rx="12" fill="#111113" stroke="#3F3F46"/>
+  <text x="150" y="255" fill="#A1A1AA" font-size="13">Context window: top-k chunks + prompt � grounded answer with citations</text>
+  <text x="150" y="285" fill="#71717A" font-size="12">Fallback: LM Studio when cloud API unavailable</text>
+  <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#6366F1"/></marker></defs>
+</svg>

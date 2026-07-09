@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" fill="none">
+  <rect width="1200" height="675" fill="#09090B"/>
+  <rect x="40" y="40" width="1120" height="595" rx="16" fill="#18181B" stroke="#27272A"/>
+  <rect x="40" y="40" width="1120" height="48" rx="16" fill="#111113"/>
+  <circle cx="68" cy="64" r="8" fill="#F87171"/>
+  <circle cx="92" cy="64" r="8" fill="#FBBF24"/>
+  <circle cx="116" cy="64" r="8" fill="#34D399"/>
+  <text x="140" y="70" fill="#71717A" font-family="monospace" font-size="14">lumora  study assistant</text>
+  <rect x="80" y="120" width="480" height="440" rx="12" fill="#09090B" stroke="#3F3F46"/>
+  <text x="110" y="160" fill="#A1A1AA" font-family="sans-serif" font-size="16">Ask about your notes</text>
+  <rect x="110" y="180" width="420" height="56" rx="8" fill="#18181B" stroke="#6366F1"/>
+  <text x="130" y="215" fill="#E4E4E7" font-family="sans-serif" font-size="15">Explain attention mechanisms with sources</text>
+  <rect x="110" y="260" width="420" height="120" rx="8" fill="#18181B" stroke="#27272A"/>
+  <text x="130" y="295" fill="#22D3EE" font-family="monospace" font-size="13">Retrieved 4 chunks from FAISS</text>
+  <text x="130" y="325" fill="#A1A1AA" font-family="sans-serif" font-size="14">Attention lets each token weigh other tokens&</text>
+  <text x="130" y="355" fill="#71717A" font-family="sans-serif" font-size="12">Source: lecture-notes.pdf � p.12</text>
+  <rect x="600" y="120" width="520" height="200" rx="12" fill="#18181B" stroke="#27272A"/>
+  <text x="630" y="155" fill="#A855F7" font-family="monospace" font-size="12">INDEXED DOCUMENTS</text>
+  <rect x="630" y="175" width="200" height="28" rx="6" fill="#27272A"/><text x="642" y="194" fill="#D4D4D8" font-size="12">ml-notes.pdf</text>
+  <rect x="630" y="215" width="200" height="28" rx="6" fill="#27272A"/><text x="642" y="234" fill="#D4D4D8" font-size="12">dsa-cheatsheet.pdf</text>
+  <rect x="630" y="255" width="200" height="28" rx="6" fill="#27272A"/><text x="642" y="274" fill="#D4D4D8" font-size="12">nlp-lecture-3.pdf</text>
+  <rect x="600" y="350" width="520" height="210" rx="12" fill="#111113" stroke="#3F3F46"/>
+  <text x="630" y="385" fill="#34D399" font-family="monospace" font-size="12">MODEL ROUTING</text>
+  <rect x="630" y="405" width="140" height="60" rx="8" fill="#6366F1" fill-opacity="0.2" stroke="#6366F1"/><text x="655" y="442" fill="#E4E4E7" font-size="13">Gemini</text>
+  <text x="790" y="442" fill="#71717A" font-size="20">�</text>
+  <rect x="820" y="405" width="140" height="60" rx="8" fill="#27272A" stroke="#52525B"/><text x="840" y="442" fill="#A1A1AA" font-size="13">LM Studio</text>
+</svg>
