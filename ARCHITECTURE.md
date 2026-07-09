@@ -1,0 +1,340 @@
+# Architecture
+
+Internal engineering documentation for the portfolio codebase. This describes
+*why* the project is organized the way it is, not just what's in each folder.
+If you're adding a feature and unsure where something belongs, start here.
+
+## Status
+
+- **Phase 1** — Next.js 15 + TypeScript migration, data layer, config, constants, hooks. ✅
+- **Phase 2** — Application shell: root layout, Navbar, Footer, Providers, page composition. ✅
+- **Phase 2.5** (this document) — Architectural refinement: feature-first structure, shared layer, env strategy, asset organization. ✅
+- **Phase 3** (next) — Port the real Hero/About/Journey/Skills/Projects/Education/Certifications/Resume/Contact UI from `legacy-vite/` into `src/features/portfolio/*/components/`.
+
+---
+
+## 1. Philosophy
+
+Four rules govern every structural decision in this codebase:
+
+1. **Colocate by domain, not by file type.** A feature's types, data-access
+   function, hooks, and components live together in one folder. You should
+   never have to jump between four unrelated top-level folders to understand
+   one section of the site.
+2. **One-directional dependencies.** `app/` → `features/` → `shared/` /
+   `constants/` / `config/`. Nothing in `shared/` or `constants/` ever
+   imports from `features/`. This is what keeps the import graph acyclic and
+   makes any single feature deletable without a ripple effect.
+3. **The data layer is the only seam that changes when the backend arrives.**
+   Every `data.ts` exports `async` functions today returning static objects.
+   When Prisma/a CMS arrives, only the *body* of those functions changes —
+   every component that calls `getProjects()` stays untouched.
+4. **Don't build structure you can't fill yet.** Empty `components/` or
+   `hooks/` folders for features with no components/hooks yet are deliberately
+   *not* created. Structure is added when there's real code to put in it —
+   see [§10](#10-adding-a-new-portfolio-section) for how that happens in Phase 3.
+
+## 2. Folder structure
+
+```
+src/
+├─ app/                        Next.js App Router — routes only, no business logic
+│  ├─ layout.tsx                Root layout: fonts, metadata, providers, shell
+│  ├─ page.tsx                  Home page composition
+│  ├─ not-found.tsx / error.tsx Route-level error boundaries
+│  └─ globals.css
+│
+├─ features/
+│  └─ portfolio/                One folder per home-page section
+│     ├─ hero/        (types.ts, data.ts, index.ts)
+│     ├─ about/       (types.ts, data.ts, index.ts)
+│     ├─ journey/     (types.ts, data.ts, index.ts)
+│     ├─ skills/      (types.ts, data.ts, index.ts)
+│     ├─ projects/    (types.ts, data.ts, index.ts)
+│     ├─ education/   (types.ts, data.ts, index.ts)
+│     ├─ certifications/ (types.ts, data.ts, index.ts)
+│     └─ contact/     (types.ts, data.ts, index.ts)
+│        # `resume/` intentionally doesn't exist yet — see §3.
+│        # `components/` and `hooks/` subfolders arrive per-feature in Phase 3.
+│
+├─ components/
+│  ├─ layout/                   App-shell chrome — one instance per app, not reusable
+│  │  ├─ site-shell.tsx          Composes Navbar + main + Footer + cross-cutting UI
+│  │  ├─ cursor-glow.tsx
+│  │  ├─ skip-to-content-link.tsx
+│  │  ├─ navbar/                 Navbar + its private subcomponents + its ScrollSpy hook
+│  │  └─ footer/                 Footer + its colocated footer.data.ts
+│  └─ placeholders/              TEMPORARY — deleted once Phase 3 lands real sections
+│
+├─ shared/                      Reusable code with NO ties to a specific feature
+│  ├─ types/                     Cross-cutting types used by 2+ features (AccentColor, SectionId, SiteConfig, ...)
+│  ├─ hooks/                     Generic hooks (use-magnetic, use-mouse-parallax, use-media-query, use-gsap-reveal)
+│  └─ utils/                     Small pure helpers (cn, formatTagId, isExternalHref)
+│     # shared/components/ will be added in Phase 3 when UI primitives
+│     # (GlassCard, Badge, MagneticButton, SectionHeader, TechLogo, ...) are ported.
+│
+├─ constants/                   Static, app-wide configuration values (NOT reusable code)
+│  ├─ theme.ts                   Accent color → Tailwind class mappings
+│  ├─ tech-logos.ts              Tech name → Simple Icons slug mappings
+│  ├─ navigation.ts               NAVIGATION_ITEMS
+│  ├─ animation.ts                Framer Motion presets
+│  └─ sections.ts                 HOME_SECTION_ORDER, SECTION_LABELS
+│
+├─ config/                      Application-level configuration singletons
+│  ├─ site.config.ts              Identity, SEO defaults, social links (SITE)
+│  └─ env.ts                      Typed environment variable access (env)
+│
+├─ providers/                   React context composition root
+│  └─ app-providers.tsx           <AppProviders> — see §7
+│
+└─ lib/                         Reserved, currently empty — see §5
+```
+
+### Why `constants/` and `shared/` are different folders
+
+Both hold "stuff many features use," but the distinction matters:
+
+- **`constants/`** = static *data* — plain values and lookup tables with no
+  behavior (`SECTION_THEMES`, `NAVIGATION_ITEMS`). These describe the site's
+  configuration, not its logic.
+- **`shared/`** = reusable *code* — types, hooks, and utils with actual logic
+  or generic component contracts. If it has a function body or a React
+  render, it belongs in `shared/` (or a feature, if domain-specific); if it's
+  just data, it belongs in `constants/`.
+
+## 3. Feature-based architecture — what's there and what's deliberately not
+
+Each entry in `src/features/portfolio/` corresponds to a section in
+`HOME_SECTION_ORDER`. Today each one owns exactly `types.ts` + `data.ts` +
+`index.ts`, because that's genuinely all that exists right now (the actual
+UI still lives in `legacy-vite/`, unported).
+
+**`resume/` does not have a feature folder yet.** Unlike every other section,
+the Resume section has no dedicated content shape — it renders directly from
+`SITE.resumePath` / `SITE.resumePreview`. There's no `types.ts` or `data.ts`
+to move there today. When Phase 3 builds the actual `<ResumeSection />`
+component, that's when `features/portfolio/resume/components/` is created —
+manufacturing an empty feature folder now would be structure with nothing in it.
+
+**`components/` and `hooks/` subfolders don't exist inside any feature yet**,
+for the same reason: Phase 3 hasn't ported any section UI, so there's no
+component or feature-specific hook to colocate. See §10 for exactly how these
+get added.
+
+## 4. Content layer: colocated in features, not a global `lib/data/` or `content/`
+
+The original Phase 1 layout had a global `src/lib/data/*.data.ts` — one file
+per domain, all living in the same folder as each other but away from their
+types (`src/types/*.ts`). That's a **layered** architecture (group by file
+type: all types together, all data together). This refactor moves to a
+**vertical-slice** architecture (group by domain: a feature's types and data
+live in the same folder).
+
+This directly answers the "will this survive a Prisma migration?" question:
+
+```ts
+// Today — src/features/portfolio/projects/data.ts
+const projects: Project[] = [ /* static array */ ]
+export async function getProjects(): Promise<Project[]> {
+  return projects
+}
+
+// Tomorrow — same file, same signature, same import path everywhere
+import { prisma } from '@/lib/prisma'
+export async function getProjects(): Promise<Project[]> {
+  return prisma.project.findMany({ orderBy: { featured: 'desc' } })
+}
+```
+
+No component changes. No import path changes. Only this one function body
+changes, one feature at a time — you could migrate `projects` to Prisma
+while `certifications` is still static, and nothing breaks.
+
+A dedicated top-level `content/` directory was considered and rejected: it
+would just be `lib/data/` renamed, and it still separates data from the types
+and (eventually) components that describe the same domain. Colocating inside
+`features/portfolio/<domain>/` is strictly better because renaming or
+deleting a feature is a single folder operation instead of a hunt across
+three directories.
+
+## 5. `lib/` is reserved, not deleted
+
+`src/lib/` is empty today and intentionally excluded from this repo (empty
+folders aren't meaningful in git). It is **reserved** for future
+vendor/infra clients — the things that talk to an external system rather
+than represent the site's own content:
+
+- `lib/prisma.ts` — the `PrismaClient` singleton (standard Next.js pattern to
+  avoid creating a new client on every hot-reload in dev).
+- `lib/cloudinary.ts` — Cloudinary SDK client.
+- `lib/resend.ts` — Resend email client.
+- `lib/auth.ts` — Clerk server-side helpers, if needed beyond the SDK's own exports.
+
+This is a different job from `shared/`: `shared/` is internal, dependency-free
+application code; `lib/` is the boundary where the app talks to the outside
+world. Keeping that distinction means "where's the Prisma client?" always has
+one obvious answer.
+
+## 6. Import organization
+
+- **Path alias**: `@/*` → `src/*`. No additional aliases (like `@/features/*`)
+  were added — they'd be redundant with `@/*` and are one more thing to keep
+  in sync in `tsconfig.json`.
+- **Barrel exports exist at the leaf level only**: `shared/types/index.ts`,
+  `shared/hooks/index.ts`, and each `features/portfolio/<domain>/index.ts`
+  re-export their own folder's contents.
+- **No mega-barrel.** There is deliberately no `features/portfolio/index.ts`
+  that re-exports every feature, and no top-level `shared/index.ts` that
+  re-exports types+hooks+utils together. A single aggregating barrel becomes
+  a hotspot that every feature imports from, which is exactly how accidental
+  cross-feature coupling and circular imports get introduced later. Importing
+  `@/features/portfolio/projects` directly is one character longer than
+  `@/portfolio` and immeasurably safer.
+- **Colocation beats a shared file when there's exactly one consumer.**
+  `useActiveSection` lives in `components/layout/navbar/`, not `shared/hooks/`,
+  because only the Navbar uses it. `FooterData`/`getFooterData()` lives in
+  `components/layout/footer/footer.data.ts`, not in the `contact` feature,
+  for the same reason — footer copy isn't "contact" content, it's the
+  footer's own content.
+
+## 7. Providers — composition root for cross-cutting concerns
+
+`src/providers/app-providers.tsx` is a single `<AppProviders>` component
+that today just passes `children` through. It exists so that **every**
+future cross-cutting concern gets added in exactly one place, in a
+documented order, instead of each feature reaching for its own context:
+
+```
+<AnalyticsProvider>        outermost — observes every route change & error boundary
+  <ClerkProvider>          auth before anything that needs a user/session
+    <QueryClientProvider>  TanStack Query, keyed off the session above it
+      <ThemeProvider>      presentational, safe to nest deep
+        <ChatbotProvider>  innermost — depends on the above, nothing depends on it
+          {children}
+```
+
+`app/layout.tsx` will never need to change again as providers are added —
+only `app-providers.tsx` does.
+
+## 8. Environment architecture
+
+`src/config/env.ts` exports a single typed `env` object. Every future secret
+(`DATABASE_URL`, `CLERK_SECRET_KEY`, `CLOUDINARY_CLOUD_NAME`, `RESEND_API_KEY`,
+`GOOGLE_ANALYTICS_ID`) is declared on the `Env` interface as optional and
+documented with an `@future` tag, even though none of them are set yet.
+`.env.example` mirrors the same list for local setup.
+
+Only `NEXT_PUBLIC_APP_URL` is actually consumed today (`app/layout.tsx`'s
+`metadataBase` / Open Graph `url`), falling back to `SITE.siteUrl` so nothing
+breaks if the env var is never set.
+
+**Migration path to validated env (documented, not implemented):** replace
+the plain object in `env.ts` with a Zod schema —
+`envSchema.parse(process.env)` — so a missing required var fails the build
+immediately with a clear message, instead of failing confusingly deep inside
+a database call. Every call site (`env.databaseUrl`) is unaffected; only this
+file's internals change. Zod is intentionally not installed yet, per the
+brief.
+
+## 9. Public assets
+
+```
+public/
+├─ resume/            Akshay-Tiwari-Resume.pdf, resume-preview.png
+├─ images/            profile.jpg
+├─ icons/             favicon.svg
+├─ logos/             (empty — see below)
+├─ project-images/    Screenshots & architecture diagrams referenced by features/portfolio/projects
+└─ certificates/      Certificate images referenced by features/portfolio/certifications
+```
+
+`logos/` exists but is empty by design: technology logos (Python, React,
+PyTorch, ...) are fetched at request-time from the Simple Icons CDN via
+`constants/tech-logos.ts`, not stored locally. If that ever changes (e.g. to
+avoid a CDN dependency), downloaded SVGs would land here.
+
+`certificates/` stays a top-level sibling of `project-images/` rather than
+nesting under `images/` — both directories hold "proof of real work"
+screenshots in the same spirit, and forcing an extra nesting level under
+`images/` for one of them but not the other would be inconsistent for no
+benefit.
+
+**Housekeeping done alongside the reorganization:** 11 confirmed-orphaned
+files were removed rather than moved — 6 placeholder certificate SVGs, 2
+AgentOps project images (that project was removed from the data earlier), 2
+duplicate old-format Lumora SVGs superseded by real PNGs, and an unreferenced
+root-level `icons.svg` sprite sheet. All were verified unreferenced anywhere
+in `legacy-vite/` or `src/` before deletion. Also removed: `src/assets/`,
+`src/App.css`, `src/data/`, `src/utils/` — dead leftovers from the original
+`npm create vite` scaffold, unreferenced anywhere.
+
+## 10. Adding a new portfolio section
+
+1. Create `src/features/portfolio/<name>/types.ts` and `data.ts` (+`index.ts`
+   barrel re-exporting both).
+2. Add the section's ID to `SectionId` in `shared/types/common.ts`.
+3. Register it in `constants/sections.ts` (`HOME_SECTION_ORDER`,
+   `SECTION_LABELS`) and `constants/navigation.ts` (`NAVIGATION_ITEMS`, if it
+   should appear in the Navbar).
+4. Build `src/features/portfolio/<name>/components/<name>-section.tsx` (Server
+   Component by default — see §11) and add `hooks/` only if the section needs
+   client-only interactive logic that isn't generic enough for `shared/hooks/`.
+5. Swap the matching `<SectionPlaceholder>` in `app/page.tsx` for the real
+   component.
+
+## 11. Adding a new top-level feature (e.g. Blog)
+
+Follow the same shape as `portfolio/`: `src/features/blog/{types.ts, data.ts,
+components/, hooks/, index.ts}`, plus its own route segment under `app/blog/`.
+Blog posts reuse `<SiteShell>` for consistent Navbar/Footer; only the `<main>`
+content differs per route.
+
+## 12. Rendering strategy: Server vs. Client Components
+
+Default to a **Server Component**. Only add `'use client'` when a file needs:
+
+- Browser-only APIs (`window`, `document`, `IntersectionObserver`) — see
+  `use-active-section.ts`, `use-mouse-parallax.ts`.
+- Interactivity/state (`onClick`, `useState`) — see `MobileNavToggle`.
+- A hook that itself requires the client (`useReducedMotion`, `useScroll`).
+
+Data-fetching components (`Footer`, and every future `<XSection />`) stay
+`async` Server Components that call their feature's `getXData()` directly —
+no client-side fetching, no loading spinners, no extra JS shipped for static
+content. `SiteShell` composes client Navbar + server `<main>` + server Footer
+in one Server Component, which is why it isn't itself a "client" file even
+though its children are a mix.
+
+## 13. Future systems — where they'll attach
+
+| System | Attaches at |
+|---|---|
+| **Prisma** | `lib/prisma.ts` (client) + each feature's `data.ts` function bodies swap from static arrays to queries. Types in each feature's `types.ts` become the shape Prisma's generated types are mapped to (or replaced by them directly). |
+| **Admin Dashboard** | New `app/admin/` route group with its own `layout.tsx` gated by Clerk middleware. Reuses the *same* `getProjects()`/`getCertifications()` etc. for reads, adds `createProject()`/`updateProject()` mutations beside them in each feature's `data.ts`. |
+| **Blog** | New `src/features/blog/` (mirrors `portfolio/`) + `app/blog/` routes. Reuses `<SiteShell>`. |
+| **AI Chatbot** | `<ChatbotProvider>` slot in `app-providers.tsx` (§7) + a new `src/features/chatbot/` (or a `shared/components/` widget if it's a single floating button with no dedicated content model). |
+| **Resend (contact form)** | `lib/resend.ts` client, called from a new `app/api/contact/route.ts`, using `env.resendApiKey`. |
+| **Cloudinary** | `lib/cloudinary.ts` client; `screenshot`/`architectureImage`/`image` fields in feature types stay `string` URLs — only *where* that URL points to changes (from `/project-images/*.png` to a Cloudinary URL). |
+
+## 14. Naming conventions
+
+- Files: `kebab-case.ts` / `kebab-case.tsx` (`use-active-section.ts`, `nav-brand.tsx`).
+- Components: `PascalCase` exports (`export function NavBrand()`), file name matches in kebab-case.
+- Hooks: `camelCase`, prefixed `use` (`useActiveSection`).
+- Data-access functions: `getX()` / `getXBySlug()`, always `async`, always
+  return a typed `Promise`.
+- Per-feature files: exactly `types.ts`, `data.ts`, `index.ts` — no domain
+  prefix (it's `features/portfolio/hero/data.ts`, not `hero.data.ts`) since
+  the folder already names the domain.
+
+## 15. Code organization rules
+
+- ~250 lines per file; split by responsibility, not by arbitrary line count.
+- A file gets its own `'use client'` boundary only when it needs one — keep
+  that boundary as low in the tree as possible.
+- Never import a feature from `shared/`, `constants/`, or `config/` (one-directional dependency rule — see §1).
+- Prefer a feature's own `index.ts` import over reaching into `feature/data`
+  or `feature/types` directly from outside the feature.
+- New environment variables get documented in `config/env.ts` and
+  `.env.example` in the same commit that introduces them, even if unused for
+  a few more commits.
