@@ -1,5 +1,10 @@
 export type EducationType = 'school' | 'college'
 
+export interface EducationSectionContent {
+  label: string
+  title: string
+}
+
 export interface EducationEntry {
   id: string
   type: EducationType

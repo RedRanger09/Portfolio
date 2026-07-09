@@ -39,3 +39,18 @@ export interface Project {
   gallery: ProjectGalleryItem[]
   demo?: ProjectDemo
 }
+
+/**
+ * Section-wide editorial copy — distinct from any single `Project` record,
+ * so it lives beside the array rather than inside it. Mirrors how
+ * `about/data.ts` separates section header copy from per-item content.
+ */
+export interface ProjectsSectionContent {
+  label: string
+  title: string
+  subtitle: string
+  /** Eyebrow shown above the featured project's title. */
+  featuredEyebrow: string
+  /** Overlay text shown on a project's screenshot while `isPlaceholder` is true. */
+  comingSoonLabel: string
+}

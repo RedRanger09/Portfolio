@@ -1,4 +1,10 @@
-import type { JourneyStep } from './types'
+import type { JourneySectionContent, JourneyStep } from './types'
+
+const journeySectionContent: JourneySectionContent = {
+  label: 'Learning Journey',
+  title: 'How my interests evolved',
+  subtitle: 'Click any milestone to read more. Chronological, based on what I actually did.',
+}
 
 const learningJourney: JourneyStep[] = [
   {
@@ -95,4 +101,8 @@ const learningJourney: JourneyStep[] = [
 
 export async function getLearningJourney(): Promise<JourneyStep[]> {
   return learningJourney
+}
+
+export async function getJourneySectionContent(): Promise<JourneySectionContent> {
+  return journeySectionContent
 }

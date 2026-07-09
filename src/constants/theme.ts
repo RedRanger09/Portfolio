@@ -42,6 +42,22 @@ export const ACCENT_TEXT_CLASS: Record<AccentColor, string> = {
   pink: 'text-pink-400',
 }
 
+/**
+ * Left-border variant of `ACCENT_CLASSES.border`, used by the Journey
+ * timeline's "current milestone" highlight. Kept as its own literal map
+ * (rather than deriving it with `.replace('border-', 'border-l-')` at
+ * runtime, as the legacy implementation did) because Tailwind's JIT scanner
+ * only picks up class names that appear as literal strings in source —
+ * a runtime-constructed class name would silently never be generated.
+ */
+export const ACCENT_BORDER_LEFT_CLASS: Record<AccentColor, string> = {
+  purple: 'border-l-purple-500/25',
+  emerald: 'border-l-emerald-500/25',
+  cyan: 'border-l-cyan-500/25',
+  amber: 'border-l-amber-500/25',
+  pink: 'border-l-pink-500/25',
+}
+
 export const ACCENT_GRADIENT_CLASS: Record<AccentColor, string> = {
   cyan: 'from-cyan-500/10 via-transparent to-transparent',
   purple: 'from-purple-500/10 via-transparent to-transparent',

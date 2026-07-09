@@ -1,4 +1,16 @@
-import type { Project } from './types'
+import type { Project, ProjectsSectionContent } from './types'
+
+const projectsSectionContent: ProjectsSectionContent = {
+  label: 'Projects',
+  title: "Things I've actually built",
+  subtitle: 'Lumora is the main one. The rest are smaller learning projects — with more coming.',
+  featuredEyebrow: 'Featured project',
+  comingSoonLabel: 'Coming soon',
+}
+
+export async function getProjectsSectionContent(): Promise<ProjectsSectionContent> {
+  return projectsSectionContent
+}
 
 const projects: Project[] = [
   {

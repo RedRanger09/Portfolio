@@ -19,15 +19,3 @@ export const HOME_SECTION_ORDER: SectionId[] = [
   'resume',
   'contact',
 ]
-
-export const SECTION_LABELS: Record<SectionId, string> = {
-  top: 'Hero',
-  about: 'About Me',
-  journey: 'Learning Journey',
-  skills: 'Skills',
-  projects: 'Projects',
-  education: 'Education',
-  certifications: 'Certificates',
-  resume: 'Resume',
-  contact: 'Contact',
-}

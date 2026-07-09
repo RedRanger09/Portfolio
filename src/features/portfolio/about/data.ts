@@ -1,7 +1,9 @@
 import type { AboutData } from './types'
 
 const aboutData: AboutData = {
+  label: 'About Me',
   title: 'My journey (so far)',
+  subtitle: 'A short version of how I got here.',
   story: [
     "I'm a B.Tech Computer Science student who started with programming fundamentals and small scripts.",
     'From there I got into web development so I could turn ideas into usable projects.',
@@ -16,6 +18,7 @@ const aboutData: AboutData = {
       'Strengthening fundamentals in deep learning',
     ],
   },
+  interestsLabel: 'Interests',
   interests: ['Machine Learning', 'RAG systems', 'Full-stack web', 'Building useful student tools'],
 }
 

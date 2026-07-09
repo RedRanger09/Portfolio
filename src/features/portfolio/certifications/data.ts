@@ -1,4 +1,10 @@
-import type { Certification } from './types'
+import type { Certification, CertificationsSectionContent } from './types'
+
+const certificationsSectionContent: CertificationsSectionContent = {
+  label: 'Certifications',
+  title: 'Certificates',
+  subtitle: 'Click to verify or view credentials. Add more by editing one object in the data file.',
+}
 
 const certifications: Certification[] = [
   {
@@ -50,4 +56,8 @@ const certifications: Certification[] = [
 
 export async function getCertifications(): Promise<Certification[]> {
   return certifications
+}
+
+export async function getCertificationsSectionContent(): Promise<CertificationsSectionContent> {
+  return certificationsSectionContent
 }

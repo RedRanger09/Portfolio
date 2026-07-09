@@ -35,10 +35,10 @@ const heroData: HeroData = {
     },
   ],
   ctas: [
-    { label: 'View Projects', href: '#projects', variant: 'primary' },
-    { label: 'Download Resume', href: SITE.resumePath, variant: 'secondary', download: true },
-    { label: 'GitHub', href: SITE.social.github, variant: 'ghost' },
-    { label: 'LinkedIn', href: SITE.social.linkedin, variant: 'ghost' },
+    { label: 'View Projects', href: '#projects', variant: 'primary', icon: 'FolderKanban' },
+    { label: 'Download Resume', href: SITE.resumePath, variant: 'secondary', icon: 'Download', download: true },
+    { label: 'GitHub', href: SITE.social.github, variant: 'ghost', icon: 'GitBranch' },
+    { label: 'LinkedIn', href: SITE.social.linkedin, variant: 'ghost', icon: 'BriefcaseBusiness' },
   ],
 }
 

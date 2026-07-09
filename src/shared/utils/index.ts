@@ -10,14 +10,6 @@ export function cn(...classes: Array<string | false | null | undefined>): string
   return classes.filter(Boolean).join(' ')
 }
 
-/** Slugifies a string into a URL/DOM-id-safe token, e.g. "Machine Learning" -> "machine-learning". */
-export function formatTagId(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')
-}
-
 /** Whether an href points outside the app (http/https/mailto) — used to decide `target="_blank"`. */
 export function isExternalHref(href = ''): boolean {
   return href.startsWith('http://') || href.startsWith('https://') || href.startsWith('mailto:')

@@ -1,4 +1,10 @@
-import type { SkillGroup } from './types'
+import type { SkillGroup, SkillsSectionContent } from './types'
+
+const skillsSectionContent: SkillsSectionContent = {
+  label: 'Skills',
+  title: 'What I work with',
+  subtitle: 'Tools and frameworks I reach for when building coursework and side projects.',
+}
 
 const skillGroups: SkillGroup[] = [
   {
@@ -75,4 +81,8 @@ const skillGroups: SkillGroup[] = [
 
 export async function getSkillGroups(): Promise<SkillGroup[]> {
   return skillGroups
+}
+
+export async function getSkillsSectionContent(): Promise<SkillsSectionContent> {
+  return skillsSectionContent
 }

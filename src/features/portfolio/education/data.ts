@@ -1,4 +1,9 @@
-import type { EducationEntry } from './types'
+import type { EducationEntry, EducationSectionContent } from './types'
+
+const educationSectionContent: EducationSectionContent = {
+  label: 'Education',
+  title: 'Academic background',
+}
 
 const education: EducationEntry[] = [
   {
@@ -28,4 +33,8 @@ const education: EducationEntry[] = [
 
 export async function getEducation(): Promise<EducationEntry[]> {
   return education
+}
+
+export async function getEducationSectionContent(): Promise<EducationSectionContent> {
+  return educationSectionContent
 }

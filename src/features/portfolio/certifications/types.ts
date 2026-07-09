@@ -7,3 +7,9 @@ export interface Certification {
   verifyUrl: string
   image: string
 }
+
+export interface CertificationsSectionContent {
+  label: string
+  title: string
+  subtitle: string
+}

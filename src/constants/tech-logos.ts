@@ -62,11 +62,6 @@ export function getTechLogoSlug(name: string): string {
   return SLUG_MAP[name] ?? name.toLowerCase().replace(/[^a-z0-9]/g, '')
 }
 
-export function getTechLogoUrl(name: string, color = 'a1a1aa'): string {
-  const slug = getTechLogoSlug(name)
-  return `https://cdn.simpleicons.org/${slug}/${color}`
-}
-
 export function getSimpleIconUrl(slug: string): string {
   return `https://cdn.simpleicons.org/${slug}`
 }
