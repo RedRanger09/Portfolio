@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import type { Project, ProjectsSectionContent } from './types'
 
 const projectsSectionContent: ProjectsSectionContent = {
@@ -172,15 +173,30 @@ export async function getProjects(): Promise<Project[]> {
   return projects
 }
 
-export async function getProjectBySlug(slug: string): Promise<Project | undefined> {
+/**
+ * Wrapped in React's `cache()` so `/projects/[slug]`'s `generateMetadata`
+ * and page component — which both need the same project — share one
+ * lookup per request instead of running it twice. A no-op today (it's an
+ * in-memory `find`), but this is exactly the boundary that becomes a real
+ * database round trip once this function's body swaps to a Prisma query
+ * (`ARCHITECTURE.md §4`), so caching it now costs nothing and avoids a
+ * silent double-query regression later.
+ */
+export const getProjectBySlug = cache(async (slug: string): Promise<Project | undefined> => {
   return projects.find((project) => project.slug === slug)
-}
+})
 
 export async function getFeaturedProject(): Promise<Project | undefined> {
   return projects.find((project) => project.featured)
 }
 
-/** All static params for the `/projects/[slug]` route — used by `generateStaticParams`. */
+/**
+ * Static params for the `/projects/[slug]` route — used by
+ * `generateStaticParams`. Excludes placeholder projects: they have no real
+ * case-study content, so `/projects/[slug]` treats them as not found
+ * (`isPlaceholder` check in `app/projects/[slug]/page.tsx`) rather than
+ * pre-rendering an empty page for them.
+ */
 export async function getAllProjectSlugs(): Promise<string[]> {
-  return projects.map((project) => project.slug)
+  return projects.filter((project) => !project.isPlaceholder).map((project) => project.slug)
 }

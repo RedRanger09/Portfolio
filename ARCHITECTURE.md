@@ -8,8 +8,11 @@ If you're adding a feature and unsure where something belongs, start here.
 
 - **Phase 1** — Next.js 15 + TypeScript migration, data layer, config, constants, hooks. ✅
 - **Phase 2** — Application shell: root layout, Navbar, Footer, Providers, page composition. ✅
-- **Phase 2.5** (this document) — Architectural refinement: feature-first structure, shared layer, env strategy, asset organization. ✅
-- **Phase 3** (next) — Port the real Hero/About/Journey/Skills/Projects/Education/Certifications/Resume/Contact UI from `legacy-vite/` into `src/features/portfolio/*/components/`.
+- **Phase 2.5** — Architectural refinement: feature-first structure, shared layer, env strategy, asset organization. ✅
+- **Phase 3** — Ported all public portfolio sections (Hero, About, Journey, Skills, Projects, Education, Certifications, Resume, Contact) from `legacy-vite/`. ✅
+- **Backend architecture design** — domain model, database design, CMS design, and infrastructure fully documented in `docs/architecture/` and `docs/infrastructure/`, before any backend code. ✅
+- **Phase 5.1** (this document) — Infrastructure foundation: Prisma installed and connected to Neon, `lib/` bootstrapped, health-check endpoint, config placeholders for Cloudinary/Resend/AI. No models, no CRUD yet — see `docs/infrastructure/phase-5-1-implementation-notes.md`. ✅
+- **Phase 5.2 / 6** (next) — Author the real Prisma schema from `docs/architecture/domain-model.md`; first migration; Clerk integration.
 
 ---
 
@@ -87,7 +90,12 @@ src/
 ├─ providers/                   React context composition root
 │  └─ app-providers.tsx           <AppProviders> — see §7
 │
-└─ lib/                         Reserved, currently empty — see §5
+└─ lib/                         Vendor/infra clients — the boundary where the app talks outward (§5)
+   ├─ prisma.ts                  PrismaClient singleton — connects to Neon Postgres
+   ├─ db-health.ts               checkDatabaseConnection() — used by app/api/health
+   ├─ cloudinary.ts               @future — config placeholder, no SDK installed yet
+   ├─ resend.ts                   @future — config placeholder, no SDK installed yet
+   └─ ai.ts                       @future — config placeholder (models decided, no SDK installed yet)
 ```
 
 ### Why `constants/` and `shared/` are different folders
@@ -157,23 +165,34 @@ and (eventually) components that describe the same domain. Colocating inside
 deleting a feature is a single folder operation instead of a hunt across
 three directories.
 
-## 5. `lib/` is reserved, not deleted
+## 5. `lib/` — vendor/infra clients
 
-`src/lib/` is empty today and intentionally excluded from this repo (empty
-folders aren't meaningful in git). It is **reserved** for future
-vendor/infra clients — the things that talk to an external system rather
-than represent the site's own content:
+`src/lib/` is the boundary where the app talks to an external system rather
+than represents the site's own content. As of Phase 5.1:
 
 - `lib/prisma.ts` — the `PrismaClient` singleton (standard Next.js pattern to
-  avoid creating a new client on every hot-reload in dev).
-- `lib/cloudinary.ts` — Cloudinary SDK client.
-- `lib/resend.ts` — Resend email client.
-- `lib/auth.ts` — Clerk server-side helpers, if needed beyond the SDK's own exports.
+  avoid creating a new client on every hot-reload in dev), connected to Neon
+  Postgres. **Live** — this is the first `lib/` client actually wired up.
+- `lib/db-health.ts` — `checkDatabaseConnection()`, backing
+  `app/api/health/route.ts`. **Live.**
+- `lib/cloudinary.ts` — Cloudinary config placeholder. `@future` — no SDK
+  installed; becomes a real client in Phase 8.
+- `lib/resend.ts` — Resend email config placeholder. `@future` — no SDK
+  installed; becomes a real client in Phase 10.
+- `lib/ai.ts` — AI Assistant config placeholder (chat/embedding model
+  choice already decided — see
+  `docs/infrastructure/infrastructure-overview.md §4`). `@future` — no SDK
+  installed; becomes a real client in Phase 11.
+- `lib/auth.ts` — not yet created. Clerk server-side helpers land in
+  Phase 6, if needed beyond the SDK's own exports.
 
 This is a different job from `shared/`: `shared/` is internal, dependency-free
 application code; `lib/` is the boundary where the app talks to the outside
 world. Keeping that distinction means "where's the Prisma client?" always has
-one obvious answer.
+one obvious answer. See
+`docs/infrastructure/phase-5-1-implementation-notes.md` for the specific
+implementation details (two connection strings, Prisma version pin) this
+phase settled that the architecture docs left open.
 
 ## 6. Import organization
 
@@ -218,15 +237,19 @@ only `app-providers.tsx` does.
 
 ## 8. Environment architecture
 
-`src/config/env.ts` exports a single typed `env` object. Every future secret
-(`DATABASE_URL`, `CLERK_SECRET_KEY`, `CLOUDINARY_CLOUD_NAME`, `RESEND_API_KEY`,
-`GOOGLE_ANALYTICS_ID`) is declared on the `Env` interface as optional and
-documented with an `@future` tag, even though none of them are set yet.
-`.env.example` mirrors the same list for local setup.
+`src/config/env.ts` exports a single typed `env` object. As of Phase 5.1,
+`databaseUrl`/`directUrl` are **live** — `lib/prisma.ts` depends on them.
+Every other secret (`CLERK_SECRET_KEY`, `CLOUDINARY_CLOUD_NAME` +
+`CLOUDINARY_API_KEY`/`_SECRET`, `RESEND_API_KEY` + `RESEND_FROM_EMAIL`,
+`OPENAI_API_KEY`, `GOOGLE_ANALYTICS_ID`) is still declared on the `Env`
+interface as optional and documented with an `@future` tag, even though
+none of them are set yet. `.env.example` mirrors the same list for local
+setup, with Neon-specific guidance on the pooled-vs-direct connection
+string split.
 
-Only `NEXT_PUBLIC_APP_URL` is actually consumed today (`app/layout.tsx`'s
-`metadataBase` / Open Graph `url`), falling back to `SITE.siteUrl` so nothing
-breaks if the env var is never set.
+`NEXT_PUBLIC_APP_URL` (consumed by `app/layout.tsx`'s `metadataBase` / Open
+Graph `url`, falling back to `SITE.siteUrl`) and `DATABASE_URL`/
+`DIRECT_URL` are the only variables actually read by running code today.
 
 **Migration path to validated env (documented, not implemented):** replace
 the plain object in `env.ts` with a Zod schema —
@@ -309,7 +332,7 @@ though its children are a mix.
 
 | System | Attaches at |
 |---|---|
-| **Prisma** | `lib/prisma.ts` (client) + each feature's `data.ts` function bodies swap from static arrays to queries. Types in each feature's `types.ts` become the shape Prisma's generated types are mapped to (or replaced by them directly). |
+| **Prisma** | `lib/prisma.ts` (client, connected to Neon — done in Phase 5.1) + each feature's `data.ts` function bodies swap from static arrays to queries, once `prisma/schema.prisma` has real models (Phase 5.2/6). Types in each feature's `types.ts` become the shape Prisma's generated types are mapped to (or replaced by them directly). |
 | **Admin Dashboard** | New `app/admin/` route group with its own `layout.tsx` gated by Clerk middleware. Reuses the *same* `getProjects()`/`getCertifications()` etc. for reads, adds `createProject()`/`updateProject()` mutations beside them in each feature's `data.ts`. |
 | **Blog** | New `src/features/blog/` (mirrors `portfolio/`) + `app/blog/` routes. Reuses `<SiteShell>`. |
 | **AI Chatbot** | `<ChatbotProvider>` slot in `app-providers.tsx` (§7) + a new `src/features/chatbot/` (or a `shared/components/` widget if it's a single floating button with no dedicated content model). |

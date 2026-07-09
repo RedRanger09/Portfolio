@@ -1,0 +1,26 @@
+// Prisma schema — infrastructure foundation only (Phase 5.1).
+//
+// Deliberately contains NO models yet. This file exists to prove the
+// connection to Neon Postgres end-to-end (client generation, connectivity,
+// pooling) before any domain model is authored. The actual schema —
+// authored 1:1 from `docs/architecture/domain-model.md` and
+// `docs/architecture/database-design.md` — lands in Phase 5.2/6 as a
+// separate, reviewable change.
+//
+// See `docs/infrastructure/phase-5-1-implementation-notes.md` for why the
+// datasource below uses two connection strings (`url` + `directUrl`)
+// instead of the single `DATABASE_URL` the architecture docs described.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  // Pooled connection (Neon's PgBouncer-compatible pooler) — used by the
+  // application at runtime. See database-and-storage.md §1.2.
+  url       = env("DATABASE_URL")
+  // Direct, unpooled connection — required by Prisma Migrate/introspection,
+  // which don't work reliably through a transaction-mode pooler.
+  directUrl = env("DIRECT_URL")
+}

@@ -1,3 +1,5 @@
+'use client'
+
 import { getSimpleIconUrl, getTechLogoSlug } from '@/constants/tech-logos'
 import { cn } from '@/shared/utils'
 
@@ -9,7 +11,16 @@ interface ProjectTagsProps {
   className?: string
 }
 
-/** Small technology badges with a colored brand logo. No motion — pure presentation. */
+/**
+ * Small technology badges with a colored brand logo. No motion, but the
+ * `onError` fallback on each `<img>` is a real event handler, which is why
+ * this needs its own `'use client'` boundary — it can't be a plain Server
+ * Component even though it renders no interactive UI, since Server
+ * Components can't pass event handler props down at all. Every previous
+ * call site happened to already be inside a client-marked ancestor
+ * (`ProjectFeatured`, `ProjectCard`), which is why this went unnoticed
+ * until the case-study page rendered it from a Server Component directly.
+ */
 export function ProjectTags({ techStack, limit, className = 'gap-2' }: ProjectTagsProps) {
   const items = limit ? techStack.slice(0, limit) : techStack
 
