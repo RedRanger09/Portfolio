@@ -1,15 +1,14 @@
-// Prisma schema — infrastructure foundation only (Phase 5.1).
+// Prisma schema — Phase 5.2: Core Portfolio content model.
 //
-// Deliberately contains NO models yet. This file exists to prove the
-// connection to Neon Postgres end-to-end (client generation, connectivity,
-// pooling) before any domain model is authored. The actual schema —
-// authored 1:1 from `docs/architecture/domain-model.md` and
-// `docs/architecture/database-design.md` — lands in Phase 5.2/6 as a
-// separate, reviewable change.
-//
-// See `docs/infrastructure/phase-5-1-implementation-notes.md` for why the
-// datasource below uses two connection strings (`url` + `directUrl`)
-// instead of the single `DATABASE_URL` the architecture docs described.
+// Scope is deliberately narrow: only the entities needed to represent the
+// public portfolio's existing content (today's `src/features/portfolio/*/data.ts`
+// static arrays) as real rows. Everything else `docs/architecture/domain-model.md`
+// describes — Users/Roles/Permissions, Media, Blog, Analytics, AI/Embeddings,
+// Audit/Version history, Draft/Publish workflow — belongs to a later phase and
+// is intentionally absent here. See `docs/infrastructure/phase-5-2-implementation-notes.md`
+// for exactly where this schema folds an architecture-doc entity (Category,
+// ProjectMetric, ProjectLink, Media, Issuer) into a scalar/array/JSON field on
+// one of the entities below, and why.
 
 generator client {
   provider = "prisma-client-js"
@@ -17,10 +16,422 @@ generator client {
 
 datasource db {
   provider  = "postgresql"
-  // Pooled connection (Neon's PgBouncer-compatible pooler) — used by the
-  // application at runtime. See database-and-storage.md §1.2.
   url       = env("DATABASE_URL")
-  // Direct, unpooled connection — required by Prisma Migrate/introspection,
-  // which don't work reliably through a transaction-mode pooler.
   directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────────────────
+
+/// Shared accent-color token — mirrors `AccentColor` in `src/shared/types/common.ts`.
+/// One enum reused by every entity that needs a themed accent, so the palette
+/// (`docs/architecture` and `src/constants/theme.ts` both already limit this to
+/// five colors) can't drift out of sync between the DB and the frontend.
+enum AccentColor {
+  PURPLE
+  EMERALD
+  CYAN
+  AMBER
+  PINK
+}
+
+/// Mirrors `SkillGroupIcon` in `src/features/portfolio/skills/types.ts`.
+enum SkillIcon {
+  CODE2
+  BRAIN
+  LAYOUT
+  WRENCH
+  CLOUD
+}
+
+/// Mirrors `EducationType` in `src/features/portfolio/education/types.ts`.
+enum EducationType {
+  SCHOOL
+  COLLEGE
+}
+
+/// Mirrors `ContactMethodIcon` in `src/features/portfolio/contact/types.ts`.
+enum SocialLinkIcon {
+  GITHUB
+  LINKEDIN
+  EMAIL
+  LOCATION
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Configuration content — singletons
+//
+// Hero, About, Resume, and ContactInformation each represent exactly one
+// section's editable copy, not a list of records. Like `SiteSettings` /
+// `HeroContent` in `domain-model.md §12`, "exactly one row" is enforced at
+// the application layer (a `findFirst`, never a `findMany`, in each
+// feature's future `data.ts`), not a DB constraint — the same reasoning
+// `database-design.md §7` gives for `ResumeVersion.isActive`.
+// ─────────────────────────────────────────────────────────────────────────
+
+/// Singleton — the Hero section's editable copy. Mirrors `HeroData` in
+/// `src/features/portfolio/hero/types.ts`.
+model Hero {
+  id String @id @default(cuid())
+
+  eyebrow     String
+  title       String
+  subtitle    String
+  description String @db.Text
+
+  /// Public URL/path to the profile image. A direct `Media` foreign key is
+  /// the eventual replacement (`domain-model.md §12`) — deferred until the
+  /// Media Library phase actually exists; a bare URL is exactly what
+  /// `HeroData.profileImage` already is today.
+  profileImage String
+
+  /// `InterestCard[]` (icon, label, title, subtitle, items[], accent) —
+  /// stored as JSON rather than its own table. These cards are edited as a
+  /// unit with Hero's other copy, never queried independently of it, and
+  /// none of their fields need a foreign key or a WHERE clause of their own
+  /// — the three properties that would justify a separate table.
+  interestCards Json
+
+  /// `HeroCta[]` (label, href, variant, icon, download?) — same reasoning
+  /// as `interestCards`.
+  ctas Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Singleton — the About section's editable copy. Mirrors `AboutData` in
+/// `src/features/portfolio/about/types.ts`.
+model About {
+  id String @id @default(cuid())
+
+  label    String
+  title    String
+  subtitle String
+
+  /// Paragraphs, in display order. A native string array, not JSON —
+  /// every element is the same shape (plain text), which is exactly what
+  /// Postgres array columns are for.
+  story String[]
+
+  currentlyLearningTitle String
+  currentlyLearningItems String[]
+
+  interestsLabel String
+  interests      String[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Singleton — today's `SITE.resumePath` made data-driven. Mirrors
+/// `ResumeData` in `src/features/portfolio/resume/types.ts`. Deliberately
+/// **not** `ResumeVersion` (`domain-model.md §7`) — no version history in
+/// this phase, so there's exactly one row, replaced in place on update,
+/// with no `isActive` flag needed until a second row can ever exist.
+model Resume {
+  id String @id @default(cuid())
+
+  label String
+  title String
+
+  /// Public path to the resume PDF.
+  filePath String
+
+  previewImage       String
+  previewAlt         String
+  previewImageWidth  Int
+  previewImageHeight Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Singleton — the Contact section's editable copy. Mirrors `ContactInfo`
+/// in `src/features/portfolio/contact/types.ts`. `domain-model.md §8` names
+/// the equivalent entity `ContactChannel`; this phase's brief calls for
+/// `ContactInformation` + `SocialLink` instead, which maps onto the same
+/// shape one level deeper (one settings row, many channel rows).
+model ContactInformation {
+  id String @id @default(cuid())
+
+  label       String
+  title       String
+  description String @db.Text
+
+  sayHelloLabel String
+  sayHelloHref  String
+
+  socialLinks SocialLink[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// One channel card (GitHub / LinkedIn / Email / Location). Mirrors
+/// `ContactMethod`. Always belongs to the one `ContactInformation` row —
+/// modeled as a real child table (not JSON on the parent) because each row
+/// needs its own stable identity for future admin drag-to-reorder, and
+/// because `icon` is meaningfully constrained to a fixed enum.
+model SocialLink {
+  id String @id @default(cuid())
+
+  contactInformationId String
+  contactInformation    ContactInformation @relation(fields: [contactInformationId], references: [id], onDelete: Cascade)
+
+  label String
+  value String
+  href  String
+  icon  SocialLinkIcon
+
+  /// Orderable pattern (`database-design.md §2.5`) — display order among
+  /// this contact's channel cards.
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// One channel per icon type per contact record — matches today's data,
+  /// where `methods` has exactly one GitHub/LinkedIn/Email/Location entry.
+  @@unique([contactInformationId, icon])
+  @@index([contactInformationId, order])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Portfolio content — Technology (shared) + Project
+// ─────────────────────────────────────────────────────────────────────────
+
+/// The single source of truth for a tool/language/framework — shared by
+/// `Project` (via `ProjectTechnology`) and `SkillCategory` (via `Skill`).
+/// See `domain-model.md §4.1`: today's static data has this concept
+/// duplicated across `Project.techStack: string[]` and
+/// `SkillItem { name, logo }`; this table is the 3NF fix for both at once.
+model Technology {
+  id String @id @default(cuid())
+
+  name String @unique
+  slug String @unique
+
+  /// Simple Icons slug used to build the CDN logo URL — mirrors
+  /// `getTechLogoSlug`/`getSimpleIconUrl` in `src/constants/tech-logos.ts`.
+  logoSlug   String?
+  websiteUrl String?
+
+  projects ProjectTechnology[]
+  skills   Skill[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// A showcased project. Mirrors `Project` in
+/// `src/features/portfolio/projects/types.ts`, with two normalizations
+/// applied per `database-design.md §1`:
+///   - `techStack: string[]` → a real `N─M` relation to `Technology`.
+///   - `caseStudy` dropped entirely — it was always exactly `/projects/${slug}`
+///     in every existing row, i.e. 100% derivable from `slug`. Storing a
+///     value that can never legitimately disagree with another column is
+///     the textbook case for *not* persisting it; the app computes the URL
+///     from `slug` instead.
+model Project {
+  id String @id @default(cuid())
+
+  slug          String  @unique
+  featured      Boolean @default(false)
+  isPlaceholder Boolean @default(false)
+
+  name        String
+  /// Free-text descriptive category (e.g. "Computer Vision"). Kept as a
+  /// plain column rather than a normalized `Category` table — see
+  /// `docs/infrastructure/phase-5-2-implementation-notes.md`.
+  category    String
+  tagline     String
+  description String  @db.Text
+
+  github   String?
+  liveDemo String?
+
+  /// Optional secondary demo link (walkthrough video, etc.) — mirrors
+  /// `Project.demo?: { label, href }`. Both null or both set; enforced at
+  /// the application layer, the same way `database-design.md §7` treats
+  /// `ResumeVersion.isActive` rather than a DB-level check constraint.
+  demoLabel String?
+  demoHref  String?
+
+  screenshot        String
+  architectureImage String?
+  ragPipelineImage  String?
+
+  /// `ProjectMetric[]` ({ label, value }) — JSON, not its own table. See
+  /// the implementation notes for why `ProjectMetric`/`ProjectLink` fold
+  /// into columns here instead of becoming tables in this phase.
+  metrics Json?
+
+  overview String  @db.Text
+  problem  String  @db.Text
+
+  architecture       String[]
+  implementation     String[]
+  challenges         String[]
+  lessonsLearned     String[]
+  futureImprovements String[]
+
+  /// `ProjectGalleryItem[]` ({ src, caption }) — JSON; see `metrics` above
+  /// for the same reasoning.
+  gallery Json?
+
+  technologies ProjectTechnology[]
+
+  /// Orderable pattern — curated display order in the Projects grid.
+  /// Not in `domain-model.md`'s attribute list for `Project`, added here
+  /// because today's array order in `data.ts` *is* the current display
+  /// order and that's genuinely primary data, not derivable from anything
+  /// else (`database-design.md §1.2`'s reasoning for `pinnedOrder`).
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([featured])
+  @@index([order])
+}
+
+/// Join: which Technologies a Project uses, in display order. Mirrors
+/// `ProjectTechnology` in `domain-model.md §4` exactly.
+model ProjectTechnology {
+  id String @id @default(cuid())
+
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  technologyId String
+  technology   Technology @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+
+  /// Orderable pattern — tech-badge display order on the project card/page.
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// A project can't list the same technology twice.
+  @@unique([projectId, technologyId])
+  @@index([projectId, order])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Portfolio content — Skills
+// ─────────────────────────────────────────────────────────────────────────
+
+/// A skills-section grouping (Programming, AI/ML, Frameworks…). Mirrors
+/// `SkillGroup` in `src/features/portfolio/skills/types.ts`.
+model SkillCategory {
+  id String @id @default(cuid())
+
+  title  String @unique
+  icon   SkillIcon
+  accent AccentColor
+  note   String
+
+  skills Skill[]
+
+  /// Orderable pattern — display order among skill groups.
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+}
+
+/// Join: which Technologies belong to a SkillCategory, in display order.
+/// Mirrors `SkillEntry` in `domain-model.md §4` (renamed `Skill` per this
+/// phase's brief) — the concrete fix for `SkillItem { name, logo }`
+/// duplicating what `Technology` already models once.
+model Skill {
+  id String @id @default(cuid())
+
+  skillCategoryId String
+  skillCategory   SkillCategory @relation(fields: [skillCategoryId], references: [id], onDelete: Cascade)
+
+  technologyId String
+  technology   Technology @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+
+  /// Orderable pattern — badge display order within its category.
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  /// A category can't list the same technology twice.
+  @@unique([skillCategoryId, technologyId])
+  @@index([skillCategoryId, order])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Portfolio content — Education & Certifications
+// ─────────────────────────────────────────────────────────────────────────
+
+/// An academic entry (school/college). Mirrors `EducationEntry` in
+/// `src/features/portfolio/education/types.ts`.
+model Education {
+  id   String        @id @default(cuid())
+  type EducationType
+
+  institution String
+  shortName   String?
+  degree      String
+
+  /// Display string (e.g. "2022 – 2026"), not two `DateTime` columns —
+  /// matches today's data exactly; nothing in the UI parses this as a real
+  /// date range today, so introducing structured dates isn't justified by
+  /// any current requirement.
+  period String
+
+  location    String
+  description String  @db.Text
+  highlights  String[]
+
+  expectedGraduation String?
+  currentSemester    String?
+
+  /// Orderable pattern — timeline display order.
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([type])
+  @@index([order])
+}
+
+/// A completed certification. Mirrors `Certification` in
+/// `src/features/portfolio/certifications/types.ts`. `domain-model.md §4`
+/// extracts the issuer into its own `Issuer` entity for 3NF; that table
+/// isn't in this phase's allowed entity list, so `provider`/`providerLogo`
+/// stay scalar columns here — see the implementation notes.
+model Certification {
+  id String @id @default(cuid())
+
+  name         String
+  provider     String
+  providerLogo String?
+
+  /// Display string ("Aug 2024") — some existing rows use the literal
+  /// placeholder "—" for "not applicable", which a `DateTime` column
+  /// can't represent without inventing a sentinel value. Kept as the
+  /// nullable display string the current data already uses.
+  completionDate String?
+
+  credentialUrl String
+  verifyUrl     String
+  image         String
+
+  /// Orderable pattern — grid display order.
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
 }

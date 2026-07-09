@@ -22,7 +22,8 @@
   error if called before their real Phase 8/10/11 integration lands). No
   SDKs installed — these files hold a *shape*, not a client.
 - `src/config/env.ts` / `.env.example` — extended with the concrete env
-  vars each of the above needs.
+  vars each of the above needs, and (in a follow-up pass — see §5 below)
+  validated at module load with Zod.
 
 ## Where implementation added detail the architecture docs left open
 
@@ -88,6 +89,45 @@ without which the client can't run at all). Recorded here only so a future
 mystery — it's this environment's npm being cautious, not a project
 misconfiguration.
 
+### 5. Environment validation added via Zod (originally deferred)
+
+The first Phase 5.1 pass deliberately shipped `env.ts` as a plain object
+with safe fallbacks, and documented Zod as a "migration path, not
+implemented yet" (see `ARCHITECTURE.md §8`'s prior revision). A follow-up
+pass installed `zod` and implemented that migration path exactly as
+described: `env.ts` now parses `process.env` through a Zod schema once, at
+module load, and every existing call site (`env.databaseUrl`, `env.appUrl`,
+...) is unchanged.
+
+Every field in the schema is `.optional()` — this is a validation layer,
+not a "require every future integration" layer. Nothing here makes
+`DATABASE_URL` or any Cloudinary/Resend/OpenAI/Clerk variable mandatory to
+build or run the app; that would have broken `next build` on this exact
+machine, which has no `.env.local` yet. What Zod adds is *shape* checking
+for whatever *is* set — a `DATABASE_URL` that isn't `postgres`-shaped, or
+an API key set to an empty string, now fails immediately with a listed,
+readable error instead of surfacing as a cryptic Prisma or SDK error later.
+Verified by temporarily setting `DATABASE_URL=not-a-valid-url` and
+confirming `next build` fails fast with `Invalid environment variables:
+- DATABASE_URL: Invalid input`, then confirming a clean build resumes once
+removed.
+
+### 6. Windows + Prisma: an intermittent `EPERM` on `prisma generate`
+
+Re-running `npx prisma generate` against an *unchanged* schema
+intermittently fails on this machine with `EPERM: operation not permitted,
+rename ...query_engine-windows.dll.node.tmpXXXX -> ...query_engine-windows.dll.node`,
+even with no other Node process running — almost certainly Windows
+Defender (or a similar real-time scanner) briefly opening the freshly
+written binary between its write and rename. It's non-blocking:
+`node_modules/.prisma/client/schema.prisma` already matches
+`prisma/schema.prisma` byte-for-byte from the last successful generate
+(confirmed via `Compare-Object`), so the existing generated client is
+correct and current, and `next build`/`tsc --noEmit` both pass against it.
+Only matters if a *future* session edits `prisma/schema.prisma` and hits
+the same lock — retrying the command, or excluding
+`node_modules/.prisma` from real-time scanning, resolves it.
+
 ## What was intentionally NOT done (per the brief)
 
 - No models, no tables, no migrations — `schema.prisma` has zero `model`
@@ -100,12 +140,34 @@ misconfiguration.
 
 ## Live connectivity verification
 
-The mechanism (`/api/health`, `checkDatabaseConnection()`) is complete and
-gracefully reports `{ ok: false, error: 'DATABASE_URL is not set...' }`
-when no database is configured — confirmed locally with `DATABASE_URL`
-unset. **Verifying an actual live Neon connection requires a real
-`DATABASE_URL`/`DIRECT_URL` pair**, which only the project owner can
-provide (Neon project creation isn't something this phase can do on your
-behalf). Once added to `.env.local`, `npm run dev` and a request to
-`/api/health` (or `npx prisma db pull` against the empty schema) completes
-this phase's verification step.
+The mechanism (`/api/health`, `checkDatabaseConnection()`) gracefully
+reports `{ ok: false, error: 'DATABASE_URL is not set...' }` when no
+database is configured — confirmed locally with `DATABASE_URL` unset.
+
+**Update (Phase 5.2 kickoff):** a real Neon `DATABASE_URL`/`DIRECT_URL`
+pair was provided and wired up. Verification completed:
+
+- `npx prisma db pull --print` connected successfully and correctly
+  reported `P4001 The introspected database was empty` (expected — no
+  models existed yet at that point).
+- `GET /api/health` against a production build returned
+  `{"status":"ok","database":{"ok":true,"latencyMs":2656}}`.
+
+One setup issue found and fixed while wiring this up: `.env.local` had
+been created by copying `.env.example` (which still has its placeholder
+`DATABASE_URL`/`DIRECT_URL` lines) and then appending the real Neon
+`DATABASE_URL` as a second, later declaration in the same file. Dotenv-style
+parsers resolve duplicate keys "first occurrence wins," so the app would
+have silently connected using the placeholder host, not the real one —
+and no `DIRECT_URL` had been added at all. Fixed by replacing the
+placeholder pair in place with the real pooled/direct URLs (the direct URL
+derived by dropping `-pooler` from the pooled host — Neon's standard
+naming convention for its two endpoint variants).
+
+A second, separate gap: the Prisma CLI (`prisma generate`/`validate`/
+`migrate`) only reads a file literally named `.env` — it has no knowledge
+of Next.js's `.env.local` convention, which only the Next.js dev/build
+server understands. A root `.env` (gitignored, same as `.env.local`) was
+added holding just `DATABASE_URL`/`DIRECT_URL`, exclusively for the CLI's
+benefit; the running app still reads everything through `.env.local` via
+`src/config/env.ts`, unchanged.

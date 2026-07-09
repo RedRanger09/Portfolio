@@ -237,9 +237,10 @@ only `app-providers.tsx` does.
 
 ## 8. Environment architecture
 
-`src/config/env.ts` exports a single typed `env` object. As of Phase 5.1,
-`databaseUrl`/`directUrl` are **live** — `lib/prisma.ts` depends on them.
-Every other secret (`CLERK_SECRET_KEY`, `CLOUDINARY_CLOUD_NAME` +
+`src/config/env.ts` exports a single typed `env` object, backed internally
+by a Zod schema. As of Phase 5.1, `databaseUrl`/`directUrl` are **live** —
+`lib/prisma.ts` depends on them. Every other secret (`CLERK_SECRET_KEY` +
+`NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLOUDINARY_CLOUD_NAME` +
 `CLOUDINARY_API_KEY`/`_SECRET`, `RESEND_API_KEY` + `RESEND_FROM_EMAIL`,
 `OPENAI_API_KEY`, `GOOGLE_ANALYTICS_ID`) is still declared on the `Env`
 interface as optional and documented with an `@future` tag, even though
@@ -251,13 +252,18 @@ string split.
 Graph `url`, falling back to `SITE.siteUrl`) and `DATABASE_URL`/
 `DIRECT_URL` are the only variables actually read by running code today.
 
-**Migration path to validated env (documented, not implemented):** replace
-the plain object in `env.ts` with a Zod schema —
-`envSchema.parse(process.env)` — so a missing required var fails the build
-immediately with a clear message, instead of failing confusingly deep inside
-a database call. Every call site (`env.databaseUrl`) is unaffected; only this
-file's internals change. Zod is intentionally not installed yet, per the
-brief.
+**Validated at module load, via Zod.** `env.ts` parses the entire
+`process.env` against a Zod schema once, on first import — a build/dev
+server that starts at all has already passed validation. Every field is
+`.optional()` (nothing here is required for the app to run yet — that's
+still gated by each feature's own "is this configured?" check, e.g.
+`isCloudinaryConfigured()`), but any value that *is* set is checked for
+shape: `DATABASE_URL`/`DIRECT_URL` must be `postgres`-prefixed URLs,
+`RESEND_FROM_EMAIL` must be a valid email, API keys must be non-empty. A
+malformed value throws one formatted error listing every failing field and
+why, instead of an ambiguous failure deep inside a database or API call.
+`env.ts`'s public shape (`Env` interface, `env.databaseUrl` etc.) is
+unchanged by this — Zod only replaced the file's internals.
 
 ## 9. Public assets
 
