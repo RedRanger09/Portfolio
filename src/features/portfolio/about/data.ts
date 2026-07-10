@@ -1,6 +1,13 @@
+import { withDbFallback } from '@/lib/db-fallback'
+import { prisma } from '@/lib/prisma'
 import type { AboutData } from './types'
 
-const aboutData: AboutData = {
+/**
+ * Static fallback — also the source `prisma/seed.ts` seeds the `About`
+ * table from. Served directly today; once migrated, served only if the
+ * database is unreachable or unseeded (`src/lib/db-fallback.ts`).
+ */
+export const FALLBACK_ABOUT_DATA: AboutData = {
   label: 'About Me',
   title: 'My journey (so far)',
   subtitle: 'A short version of how I got here.',
@@ -22,6 +29,31 @@ const aboutData: AboutData = {
   interests: ['Machine Learning', 'RAG systems', 'Full-stack web', 'Building useful student tools'],
 }
 
+/**
+ * Returns About section content. Reads the singleton `About` row from the
+ * database, falling back to `FALLBACK_ABOUT_DATA` if the database is
+ * unreachable or unseeded (`src/lib/db-fallback.ts`).
+ */
 export async function getAboutData(): Promise<AboutData> {
-  return aboutData
+  return withDbFallback(
+    async () => {
+      const row = await prisma.about.findFirst()
+      if (!row) return null
+
+      return {
+        label: row.label,
+        title: row.title,
+        subtitle: row.subtitle,
+        story: row.story,
+        currentlyLearning: {
+          title: row.currentlyLearningTitle,
+          items: row.currentlyLearningItems,
+        },
+        interestsLabel: row.interestsLabel,
+        interests: row.interests,
+      }
+    },
+    FALLBACK_ABOUT_DATA,
+    'about',
+  )
 }

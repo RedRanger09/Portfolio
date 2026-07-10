@@ -1,5 +1,8 @@
 import { cache } from 'react'
-import type { Project, ProjectsSectionContent } from './types'
+import type { Prisma } from '@prisma/client'
+import { withDbFallback } from '@/lib/db-fallback'
+import { prisma } from '@/lib/prisma'
+import type { Project, ProjectGalleryItem, ProjectMetric, ProjectsSectionContent } from './types'
 
 const projectsSectionContent: ProjectsSectionContent = {
   label: 'Projects',
@@ -13,7 +16,13 @@ export async function getProjectsSectionContent(): Promise<ProjectsSectionConten
   return projectsSectionContent
 }
 
-const projects: Project[] = [
+/**
+ * Static fallback — also the source `prisma/seed.ts` seeds
+ * `Project`/`Technology`/`ProjectTechnology` from. Served directly today;
+ * once migrated, served only if the database is unreachable or unseeded
+ * (`src/lib/db-fallback.ts`).
+ */
+export const FALLBACK_PROJECTS: Project[] = [
   {
     slug: 'lumora',
     featured: true,
@@ -169,25 +178,105 @@ const projects: Project[] = [
   },
 ]
 
+/**
+ * Shared `include` for every query below that needs a full `Project` row —
+ * the ordered `technologies → technology` join that reconstructs
+ * `Project.techStack: string[]` from the normalized `Technology` table
+ * (`domain-model.md §4.1`). Defined once so `getProjects`/`getProjectBySlug`/
+ * `getFeaturedProject` can't drift out of sync with each other's shape.
+ */
+export const PROJECT_INCLUDE = {
+  technologies: {
+    include: { technology: true },
+    orderBy: { order: 'asc' },
+  },
+} satisfies Prisma.ProjectInclude
+
+export type ProjectRow = Prisma.ProjectGetPayload<{ include: typeof PROJECT_INCLUDE }>
+
+/** Maps one `Project` row (with its ordered `technologies` join) to the app's `Project` shape. */
+function mapProjectRow(row: ProjectRow): Project {
+  return {
+    slug: row.slug,
+    featured: row.featured,
+    isPlaceholder: row.isPlaceholder,
+    name: row.name,
+    category: row.category,
+    tagline: row.tagline,
+    description: row.description,
+    techStack: row.technologies.map((pt) => pt.technology.name),
+    github: row.github ?? '',
+    liveDemo: row.liveDemo ?? '',
+    // Derived, not stored — see the normalization note on the `Project`
+    // model in `prisma/schema.prisma`.
+    caseStudy: `/projects/${row.slug}`,
+    screenshot: row.screenshot,
+    architectureImage: row.architectureImage ?? '',
+    ragPipelineImage: row.ragPipelineImage ?? undefined,
+    // Trusted, self-seeded JSON — not user input — so a direct cast is safe.
+    metrics: (row.metrics as unknown as ProjectMetric[] | null) ?? [],
+    overview: row.overview,
+    problem: row.problem,
+    architecture: row.architecture,
+    implementation: row.implementation,
+    challenges: row.challenges,
+    lessonsLearned: row.lessonsLearned,
+    futureImprovements: row.futureImprovements,
+    gallery: (row.gallery as unknown as ProjectGalleryItem[] | null) ?? [],
+    demo: row.demoLabel && row.demoHref ? { label: row.demoLabel, href: row.demoHref } : undefined,
+  }
+}
+
+/**
+ * Returns every project, in curated display order. Reads from the
+ * database, falling back to `FALLBACK_PROJECTS` if the database is
+ * unreachable or unseeded (`src/lib/db-fallback.ts`).
+ */
 export async function getProjects(): Promise<Project[]> {
-  return projects
+  return withDbFallback(
+    async () => {
+      const rows = await prisma.project.findMany({
+        include: PROJECT_INCLUDE,
+        orderBy: { order: 'asc' },
+      })
+      return rows.map(mapProjectRow)
+    },
+    FALLBACK_PROJECTS,
+    'projects',
+  )
 }
 
 /**
  * Wrapped in React's `cache()` so `/projects/[slug]`'s `generateMetadata`
  * and page component — which both need the same project — share one
- * lookup per request instead of running it twice. A no-op today (it's an
- * in-memory `find`), but this is exactly the boundary that becomes a real
- * database round trip once this function's body swaps to a Prisma query
- * (`ARCHITECTURE.md §4`), so caching it now costs nothing and avoids a
- * silent double-query regression later.
+ * lookup per request instead of running it twice (`ARCHITECTURE.md §4`).
  */
 export const getProjectBySlug = cache(async (slug: string): Promise<Project | undefined> => {
-  return projects.find((project) => project.slug === slug)
+  return withDbFallback(
+    async () => {
+      const row = await prisma.project.findUnique({
+        where: { slug },
+        include: PROJECT_INCLUDE,
+      })
+      return row ? mapProjectRow(row) : null
+    },
+    FALLBACK_PROJECTS.find((project) => project.slug === slug),
+    `project:${slug}`,
+  )
 })
 
 export async function getFeaturedProject(): Promise<Project | undefined> {
-  return projects.find((project) => project.featured)
+  return withDbFallback(
+    async () => {
+      const row = await prisma.project.findFirst({
+        where: { featured: true },
+        include: PROJECT_INCLUDE,
+      })
+      return row ? mapProjectRow(row) : null
+    },
+    FALLBACK_PROJECTS.find((project) => project.featured),
+    'featured-project',
+  )
 }
 
 /**
@@ -195,8 +284,20 @@ export async function getFeaturedProject(): Promise<Project | undefined> {
  * `generateStaticParams`. Excludes placeholder projects: they have no real
  * case-study content, so `/projects/[slug]` treats them as not found
  * (`isPlaceholder` check in `app/projects/[slug]/page.tsx`) rather than
- * pre-rendering an empty page for them.
+ * pre-rendering an empty page for them. Selects only `slug` — this query
+ * needs nothing else.
  */
 export async function getAllProjectSlugs(): Promise<string[]> {
-  return projects.filter((project) => !project.isPlaceholder).map((project) => project.slug)
+  return withDbFallback(
+    async () => {
+      const rows = await prisma.project.findMany({
+        where: { isPlaceholder: false },
+        select: { slug: true },
+        orderBy: { order: 'asc' },
+      })
+      return rows.map((row) => row.slug)
+    },
+    FALLBACK_PROJECTS.filter((project) => !project.isPlaceholder).map((project) => project.slug),
+    'project-slugs',
+  )
 }

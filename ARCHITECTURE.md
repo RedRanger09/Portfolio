@@ -11,8 +11,12 @@ If you're adding a feature and unsure where something belongs, start here.
 - **Phase 2.5** — Architectural refinement: feature-first structure, shared layer, env strategy, asset organization. ✅
 - **Phase 3** — Ported all public portfolio sections (Hero, About, Journey, Skills, Projects, Education, Certifications, Resume, Contact) from `legacy-vite/`. ✅
 - **Backend architecture design** — domain model, database design, CMS design, and infrastructure fully documented in `docs/architecture/` and `docs/infrastructure/`, before any backend code. ✅
-- **Phase 5.1** (this document) — Infrastructure foundation: Prisma installed and connected to Neon, `lib/` bootstrapped, health-check endpoint, config placeholders for Cloudinary/Resend/AI. No models, no CRUD yet — see `docs/infrastructure/phase-5-1-implementation-notes.md`. ✅
-- **Phase 5.2 / 6** (next) — Author the real Prisma schema from `docs/architecture/domain-model.md`; first migration; Clerk integration.
+- **Phase 5.1** — Infrastructure foundation: Prisma installed and connected to Neon, `lib/` bootstrapped, health-check endpoint, config placeholders for Cloudinary/Resend/AI. No models, no CRUD yet — see `docs/infrastructure/phase-5-1-implementation-notes.md`. ✅
+- **Phase 5.2** — Core Portfolio Prisma schema (12 models, 4 enums) authored from `docs/architecture/domain-model.md` and migrated to Neon, still empty — see `docs/infrastructure/phase-5-2-implementation-notes.md`. ✅
+- **Phase 5.3** — Seeded Neon with the real portfolio content and switched every feature's `data.ts` from static arrays to Prisma queries (with a static fallback on database failure). Added `JourneyMilestone` (the one Phase 5.2 scoped out). No CRUD, API routes, or admin surface yet — see `docs/infrastructure/phase-5-3-implementation-notes.md`. ✅
+- **Phase 5.4** — Backend mutation layer: one `create`/`update`/`delete` Next.js Server Action per list entity and one `update` action per singleton, each feature owning its own Zod schema(s) and validating through a shared `MutationResult<T>`/`runMutation()` pattern (`src/lib/mutation-result.ts`). Documented no-op placeholders for future Clerk authorization (`src/lib/auth-placeholder.ts`) and audit logging (`src/lib/audit-placeholder.ts`). Still no admin UI, forms, or API routes calling into any of this — see `docs/infrastructure/phase-5-4-implementation-notes.md`. ✅
+- **Phase 6** (this document) — Admin Foundation: the complete `/admin` route structure and dashboard shell (sidebar, topbar, breadcrumbs, mobile nav), one placeholder page per future module (Projects, Hero, About, Journey, Skills, Education, Certificates, Resume, Contact, Media, Blog, Messages, Analytics, AI, Settings), and the shared admin component set (`AdminCard`, `StatCard`, `SectionTitle`, `EmptyState`, `AdminTableShell`, `LoadingCard`, `ModulePlaceholder`). Required restructuring `app/` into a `(site)` route group + a sibling `admin/` root layout (two independent root layouts, Next.js's documented pattern for this exact case) plus `app/global-not-found.tsx` for the one 404 case that pattern costs you. No CRUD, forms, or authentication wired up yet — `assertAdminAccess()` is called but still a no-op — see `docs/infrastructure/phase-6-implementation-notes.md`. ✅
+- **Phase 7** (next) — Clerk authentication (wires up `assertAdminAccess()` for real); first real CRUD module wired to the mutation actions Phase 5.4 built.
 
 ---
 
@@ -42,23 +46,39 @@ Four rules govern every structural decision in this codebase:
 ```
 src/
 ├─ app/                        Next.js App Router — routes only, no business logic
-│  ├─ layout.tsx                Root layout: fonts, metadata, providers, shell
-│  ├─ page.tsx                  Home page composition
-│  ├─ not-found.tsx / error.tsx Route-level error boundaries
-│  └─ globals.css
+│  ├─ (site)/                   Route group — public site's own root layout
+│  │  ├─ layout.tsx               Root layout: fonts, metadata, providers, SiteShell
+│  │  ├─ page.tsx                 Home page composition
+│  │  ├─ not-found.tsx / error.tsx  Route-level error boundaries
+│  │  └─ projects/[slug]/page.tsx  Project case-study pages
+│  ├─ admin/                    Plain folder — /admin is a real path segment
+│  │  ├─ layout.tsx               Admin's own root layout: AdminShell, no SiteShell
+│  │  ├─ page.tsx / loading.tsx / error.tsx / not-found.tsx
+│  │  ├─ [...catchAll]/page.tsx   Gives /admin/* a reachable not-found boundary
+│  │  └─ <module>/page.tsx        One route per future admin module (§13)
+│  ├─ global-not-found.tsx      Self-contained 404 for URLs outside both root layouts
+│  └─ globals.css               Shared by both (site) and admin root layouts
+│  # Two independent root layouts because /admin's dashboard shell shares
+│  # no chrome with the public Navbar/Footer — see phase-6-implementation-notes.md.
 │
 ├─ features/
-│  └─ portfolio/                One folder per home-page section
-│     ├─ hero/        (types.ts, data.ts, index.ts)
-│     ├─ about/       (types.ts, data.ts, index.ts)
-│     ├─ journey/     (types.ts, data.ts, index.ts)
-│     ├─ skills/      (types.ts, data.ts, index.ts)
-│     ├─ projects/    (types.ts, data.ts, index.ts)
-│     ├─ education/   (types.ts, data.ts, index.ts)
-│     ├─ certifications/ (types.ts, data.ts, index.ts)
-│     └─ contact/     (types.ts, data.ts, index.ts)
-│        # `resume/` intentionally doesn't exist yet — see §3.
-│        # `components/` and `hooks/` subfolders arrive per-feature in Phase 3.
+│  ├─ portfolio/                One folder per home-page section
+│  │  ├─ hero/        (types.ts, data.ts, index.ts)
+│  │  ├─ about/       (types.ts, data.ts, index.ts)
+│  │  ├─ journey/     (types.ts, data.ts, index.ts)
+│  │  ├─ skills/      (types.ts, data.ts, index.ts)
+│  │  ├─ projects/    (types.ts, data.ts, index.ts)
+│  │  ├─ education/   (types.ts, data.ts, index.ts)
+│  │  ├─ certifications/ (types.ts, data.ts, index.ts)
+│  │  └─ contact/     (types.ts, data.ts, index.ts)
+│  │     # `resume/` intentionally doesn't exist yet — see §3.
+│  │     # `components/` and `hooks/` subfolders arrive per-feature in Phase 3.
+│  │     # every feature above also has `schemas/` + `actions/` — Phase 5.4.
+│  └─ admin/                    /admin's own components — not a "portfolio" section
+│     ├─ layout/       (admin-shell.tsx, admin-topbar.tsx, admin-footer.tsx, index.ts)
+│     ├─ navigation/   (admin-nav-items.ts, admin-sidebar.tsx, admin-mobile-nav.tsx, admin-breadcrumbs.tsx, index.ts)
+│     ├─ dashboard/    (admin-dashboard-overview.tsx, index.ts)
+│     └─ shared/       (admin-card.tsx, stat-card.tsx, section-title.tsx, empty-state.tsx, admin-table-shell.tsx, loading-card.tsx, module-placeholder.tsx, index.ts)
 │
 ├─ components/
 │  ├─ layout/                   App-shell chrome — one instance per app, not reusable
@@ -339,7 +359,7 @@ though its children are a mix.
 | System | Attaches at |
 |---|---|
 | **Prisma** | `lib/prisma.ts` (client, connected to Neon — done in Phase 5.1) + each feature's `data.ts` function bodies swap from static arrays to queries, once `prisma/schema.prisma` has real models (Phase 5.2/6). Types in each feature's `types.ts` become the shape Prisma's generated types are mapped to (or replaced by them directly). |
-| **Admin Dashboard** | New `app/admin/` route group with its own `layout.tsx` gated by Clerk middleware. Reuses the *same* `getProjects()`/`getCertifications()` etc. for reads, adds `createProject()`/`updateProject()` mutations beside them in each feature's `data.ts`. |
+| **Admin Dashboard** | Shell built in Phase 6 (`app/admin/`, `src/features/admin/`) — sidebar, topbar, breadcrumbs, 15 module placeholders. What's left: Clerk wires into the existing `assertAdminAccess()` call in `app/admin/layout.tsx`; each module page swaps `<ModulePlaceholder>` for a Server Component reading via the feature's existing `getProjects()`/`getCertifications()`/etc. and mutating via the Server Actions already built in Phase 5.4 (`create-project.ts`, `update-project.ts`, ...). |
 | **Blog** | New `src/features/blog/` (mirrors `portfolio/`) + `app/blog/` routes. Reuses `<SiteShell>`. |
 | **AI Chatbot** | `<ChatbotProvider>` slot in `app-providers.tsx` (§7) + a new `src/features/chatbot/` (or a `shared/components/` widget if it's a single floating button with no dedicated content model). |
 | **Resend (contact form)** | `lib/resend.ts` client, called from a new `app/api/contact/route.ts`, using `env.resendApiKey`. |

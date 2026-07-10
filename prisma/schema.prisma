@@ -59,6 +59,22 @@ enum SocialLinkIcon {
   LOCATION
 }
 
+/// Mirrors `JourneyIcon` in `src/features/portfolio/journey/types.ts`.
+enum JourneyIcon {
+  GRADUATION_CAP
+  BRAIN
+  WORKFLOW
+  BUILDING2
+  GLOBE
+  ZAP
+  IMAGE
+  TARGET
+  SPARKLES
+  AWARD
+  CODE2
+  TERMINAL_SQUARE
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Configuration content — singletons
 //
@@ -428,6 +444,46 @@ model Certification {
   image         String
 
   /// Orderable pattern — grid display order.
+  order Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Portfolio content — Journey
+// ─────────────────────────────────────────────────────────────────────────
+
+/// A "Learning Journey" timeline entry. Mirrors `JourneyStep` in
+/// `src/features/portfolio/journey/types.ts`. Not part of Phase 5.2's
+/// original 12-entity list — added here in Phase 5.3 because the migration
+/// order that phase's brief specifies (Hero → About → Projects → Skills →
+/// **Journey** → Education → …) requires it, and `domain-model.md §4`
+/// already fully specifies the equivalent `JourneyMilestone` entity
+/// (`label`, `year`, `description`, `icon`, `accentColor`, `isCurrent`,
+/// `subItems[]`, `order`, Orderable pattern) — this model is a direct,
+/// literal transcription of that existing design, not a new one. See
+/// `docs/infrastructure/phase-5-3-implementation-notes.md`.
+model JourneyMilestone {
+  id String @id @default(cuid())
+
+  label       String
+  /// Display string ("2024", "2025–2026", "Now") — same reasoning as
+  /// `Education.period`: nothing parses this as a real date today.
+  year        String
+  description String      @db.Text
+  icon        JourneyIcon
+  accent      AccentColor
+
+  /// Only the "Currently Learning" milestone sets this — renders the
+  /// timeline node in its active/current state.
+  isCurrent Boolean  @default(false)
+  subItems  String[]
+
+  /// Orderable pattern — chronological timeline display order (not always
+  /// the same as sorting by `year`, since several milestones share a year).
   order Int @default(0)
 
   createdAt DateTime @default(now())

@@ -1,4 +1,8 @@
-import type { SkillGroup, SkillsSectionContent } from './types'
+import type { Prisma, SkillIcon as PrismaSkillIcon } from '@prisma/client'
+import { withDbFallback } from '@/lib/db-fallback'
+import { mapAccentColor } from '@/lib/prisma-enum-mappers'
+import { prisma } from '@/lib/prisma'
+import type { SkillGroup, SkillGroupIcon, SkillsSectionContent } from './types'
 
 const skillsSectionContent: SkillsSectionContent = {
   label: 'Skills',
@@ -6,7 +10,13 @@ const skillsSectionContent: SkillsSectionContent = {
   subtitle: 'Tools and frameworks I reach for when building coursework and side projects.',
 }
 
-const skillGroups: SkillGroup[] = [
+/**
+ * Static fallback — also the source `prisma/seed.ts` seeds
+ * `SkillCategory`/`Skill`/`Technology` from. Served directly today; once
+ * migrated, served only if the database is unreachable or unseeded
+ * (`src/lib/db-fallback.ts`).
+ */
+export const FALLBACK_SKILL_GROUPS: SkillGroup[] = [
   {
     title: 'Programming',
     icon: 'Code2',
@@ -79,8 +89,54 @@ const skillGroups: SkillGroup[] = [
   },
 ]
 
+/** Mirrors `SkillIcon` in `prisma/schema.prisma` — only this feature reads it, so the mapper stays local. */
+const SKILL_ICON_MAP: Record<PrismaSkillIcon, SkillGroupIcon> = {
+  CODE2: 'Code2',
+  BRAIN: 'Brain',
+  LAYOUT: 'Layout',
+  WRENCH: 'Wrench',
+  CLOUD: 'Cloud',
+}
+
+export const SKILL_CATEGORY_INCLUDE = {
+  skills: {
+    include: { technology: true },
+    orderBy: { order: 'asc' },
+  },
+} satisfies Prisma.SkillCategoryInclude
+
+export type SkillCategoryRow = Prisma.SkillCategoryGetPayload<{ include: typeof SKILL_CATEGORY_INCLUDE }>
+
+function mapSkillCategoryRow(row: SkillCategoryRow): SkillGroup {
+  return {
+    title: row.title,
+    icon: SKILL_ICON_MAP[row.icon],
+    accent: mapAccentColor(row.accent),
+    items: row.skills.map((skill) => ({
+      name: skill.technology.name,
+      logo: skill.technology.logoSlug ?? '',
+    })),
+    note: row.note,
+  }
+}
+
+/**
+ * Returns every skill group, in curated display order. Reads from the
+ * database, falling back to `FALLBACK_SKILL_GROUPS` if the database is
+ * unreachable or unseeded (`src/lib/db-fallback.ts`).
+ */
 export async function getSkillGroups(): Promise<SkillGroup[]> {
-  return skillGroups
+  return withDbFallback(
+    async () => {
+      const rows = await prisma.skillCategory.findMany({
+        include: SKILL_CATEGORY_INCLUDE,
+        orderBy: { order: 'asc' },
+      })
+      return rows.map(mapSkillCategoryRow)
+    },
+    FALLBACK_SKILL_GROUPS,
+    'skills',
+  )
 }
 
 export async function getSkillsSectionContent(): Promise<SkillsSectionContent> {

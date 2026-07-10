@@ -1,3 +1,5 @@
+import { withDbFallback } from '@/lib/db-fallback'
+import { prisma } from '@/lib/prisma'
 import type { Certification, CertificationsSectionContent } from './types'
 
 const certificationsSectionContent: CertificationsSectionContent = {
@@ -6,7 +8,12 @@ const certificationsSectionContent: CertificationsSectionContent = {
   subtitle: 'Click to verify or view credentials. Add more by editing one object in the data file.',
 }
 
-const certifications: Certification[] = [
+/**
+ * Static fallback — also the source `prisma/seed.ts` seeds the
+ * `Certification` table from. Served directly today; once migrated, served
+ * only if the database is unreachable or unseeded (`src/lib/db-fallback.ts`).
+ */
+export const FALLBACK_CERTIFICATIONS: Certification[] = [
   {
     name: 'Supervised Machine Learning: Regression and Classification',
     provider: 'DeepLearning.AI (Andrew Ng)',
@@ -54,8 +61,28 @@ const certifications: Certification[] = [
   },
 ]
 
+/**
+ * Returns every certification, in display order. Reads from the database,
+ * falling back to `FALLBACK_CERTIFICATIONS` if the database is
+ * unreachable or unseeded (`src/lib/db-fallback.ts`).
+ */
 export async function getCertifications(): Promise<Certification[]> {
-  return certifications
+  return withDbFallback(
+    async () => {
+      const rows = await prisma.certification.findMany({ orderBy: { order: 'asc' } })
+      return rows.map((row) => ({
+        name: row.name,
+        provider: row.provider,
+        providerLogo: row.providerLogo,
+        completionDate: row.completionDate ?? '',
+        credentialUrl: row.credentialUrl,
+        verifyUrl: row.verifyUrl,
+        image: row.image,
+      }))
+    },
+    FALLBACK_CERTIFICATIONS,
+    'certifications',
+  )
 }
 
 export async function getCertificationsSectionContent(): Promise<CertificationsSectionContent> {
