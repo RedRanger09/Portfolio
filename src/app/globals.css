@@ -12,6 +12,13 @@
   --color-border: rgba(255, 255, 255, 0.08);
   --color-text: #fafafa;
   --color-text-muted: #a1a1aa;
+  --chrome-bg: rgba(3, 3, 8, 0.88);
+  --chrome-border: rgba(255, 255, 255, 0.1);
+  --chrome-text: #fafafa;
+  --chrome-muted: #a1a1aa;
+  --font-scale: 1;
+  --letter-spacing: 0em;
+  --line-height: 1.6;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -19,8 +26,22 @@
   scroll-behavior: smooth;
 }
 
+html[data-theme='light'] {
+  color-scheme: light;
+  --color-background: #f4f4f5;
+  --color-surface: #ffffff;
+  --color-border: rgba(24, 24, 27, 0.1);
+  --color-text: #18181b;
+  --color-text-muted: #52525b;
+  --chrome-bg: rgba(255, 255, 255, 0.92);
+  --chrome-border: rgba(24, 24, 27, 0.12);
+  --chrome-text: #18181b;
+  --chrome-muted: #71717a;
+}
+
 html {
   scroll-behavior: smooth;
+  font-size: calc(100% * var(--font-scale, 1));
 }
 
 body {
@@ -28,6 +49,23 @@ body {
   min-width: 320px;
   background: var(--color-background);
   color: var(--color-text);
+  letter-spacing: var(--letter-spacing, 0em);
+  line-height: var(--line-height, 1.6);
+  transition:
+    background-color 180ms ease,
+    color 180ms ease;
+}
+
+html[data-font='serif'] body {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+html[data-font='mono'] body {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+}
+
+html[data-font='sans'] body {
+  font-family: var(--font-inter), Inter, system-ui, sans-serif;
 }
 
 * {
@@ -42,6 +80,10 @@ body {
 *::selection {
   background: rgba(99, 102, 241, 0.35);
   color: #ffffff;
+}
+
+html[data-theme='light'] *::selection {
+  color: #18181b;
 }
 
 body,
@@ -87,6 +129,13 @@ button {
   animation: aurora-shift 16s ease-in-out infinite alternate;
 }
 
+html[data-theme='light'] .lab-aurora {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% 20%, rgba(99, 102, 241, 0.12), transparent),
+    radial-gradient(ellipse 60% 40% at 80% 30%, rgba(139, 92, 246, 0.1), transparent),
+    radial-gradient(ellipse 50% 30% at 50% 80%, rgba(34, 211, 238, 0.08), transparent);
+}
+
 .lab-noise {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 128px 128px;
@@ -125,14 +174,14 @@ button {
   }
 
   body {
-    @apply text-zinc-100;
+    color: var(--color-text);
   }
 
   h1,
   h2,
   h3,
   h4 {
-    letter-spacing: -0.03em;
+    letter-spacing: calc(-0.03em + var(--letter-spacing, 0em));
     text-wrap: balance;
   }
 
@@ -144,4 +193,62 @@ button {
     outline: 2px solid rgba(99, 102, 241, 0.85);
     outline-offset: 3px;
   }
+}
+
+/* Light-mode remaps for the dark-first utility palette used across the public site. */
+html[data-theme='light'] .text-white {
+  color: rgb(24 24 27) !important;
+}
+
+html[data-theme='light'] .text-zinc-100,
+html[data-theme='light'] .text-zinc-200 {
+  color: rgb(39 39 42) !important;
+}
+
+html[data-theme='light'] .text-zinc-300 {
+  color: rgb(63 63 70) !important;
+}
+
+html[data-theme='light'] .text-zinc-400 {
+  color: rgb(82 82 91) !important;
+}
+
+html[data-theme='light'] .text-zinc-500 {
+  color: rgb(113 113 122) !important;
+}
+
+html[data-theme='light'] .bg-background {
+  background-color: var(--color-background) !important;
+}
+
+html[data-theme='light'] .bg-surface,
+html[data-theme='light'] .bg-surface\/60,
+html[data-theme='light'] .bg-surface\/70 {
+  background-color: var(--color-surface) !important;
+}
+
+html[data-theme='light'] .bg-black\/40 {
+  background-color: rgba(24, 24, 27, 0.06) !important;
+}
+
+html[data-theme='light'] .border-white\/\[0\.05\],
+html[data-theme='light'] .border-white\/\[0\.06\],
+html[data-theme='light'] .border-white\/\[0\.07\],
+html[data-theme='light'] .border-white\/\[0\.08\],
+html[data-theme='light'] .border-white\/10,
+html[data-theme='light'] .border-white\/15,
+html[data-theme='light'] .border-white\/20 {
+  border-color: rgba(24, 24, 27, 0.12) !important;
+}
+
+html[data-theme='light'] .bg-white\/\[0\.025\],
+html[data-theme='light'] .bg-white\/\[0\.04\],
+html[data-theme='light'] .bg-white\/\[0\.05\],
+html[data-theme='light'] .bg-white\/\[0\.08\],
+html[data-theme='light'] .bg-white\/\[0\.09\] {
+  background-color: rgba(24, 24, 27, 0.04) !important;
+}
+
+html[data-theme='light'] .shadow-card {
+  box-shadow: 0 20px 60px rgba(24, 24, 27, 0.08) !important;
 }

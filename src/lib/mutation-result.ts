@@ -13,11 +13,12 @@
 import { Prisma } from '@prisma/client'
 import type { z } from 'zod'
 
-export type MutationErrorType = 'VALIDATION' | 'NOT_FOUND' | 'DATABASE' | 'UNEXPECTED'
+export type MutationErrorType = 'VALIDATION' | 'NOT_FOUND' | 'FORBIDDEN' | 'DATABASE' | 'UNEXPECTED'
 
 export type MutationError =
   | { type: 'VALIDATION'; message: string; fieldErrors: Record<string, string[]> }
   | { type: 'NOT_FOUND'; message: string }
+  | { type: 'FORBIDDEN'; message: string }
   | { type: 'DATABASE'; message: string }
   | { type: 'UNEXPECTED'; message: string }
 
@@ -40,6 +41,19 @@ export function mutationFailure<T = never>(error: MutationError): MutationResult
  * than an expected, nameable outcome.
  */
 export class MutationNotFoundError extends Error {}
+
+/** Thrown by `assertAdminAccess('mutation')` when auth or owner checks fail. */
+export class MutationForbiddenError extends Error {}
+
+/** Thrown from mutation handlers when business validation fails after Zod parse (e.g. slug uniqueness). */
+export class MutationValidationError extends Error {
+  readonly fieldErrors: Record<string, string[]>
+
+  constructor(fieldErrors: Record<string, string[]>, message = 'One or more fields are invalid.') {
+    super(message)
+    this.fieldErrors = fieldErrors
+  }
+}
 
 function fieldErrorsFromZodError(error: z.ZodError): Record<string, string[]> {
   const fieldErrors: Record<string, string[]> = {}
@@ -97,6 +111,14 @@ export async function runMutation<TSchema extends z.ZodType, TOutput>(
     const data = await handler(parsed.data)
     return mutationSuccess(data)
   } catch (error) {
+    if (error instanceof MutationForbiddenError) {
+      return mutationFailure({ type: 'FORBIDDEN', message: error.message })
+    }
+
+    if (error instanceof MutationValidationError) {
+      return mutationFailure({ type: 'VALIDATION', message: error.message, fieldErrors: error.fieldErrors })
+    }
+
     if (error instanceof MutationNotFoundError) {
       return mutationFailure({ type: 'NOT_FOUND', message: error.message })
     }

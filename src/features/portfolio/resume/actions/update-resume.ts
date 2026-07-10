@@ -1,7 +1,7 @@
 'use server'
 
 import type { Resume } from '@prisma/client'
-import { assertAdminAccess } from '@/lib/auth-placeholder'
+import { assertAdminAccess } from '@/lib/auth'
 import { recordAuditEvent } from '@/lib/audit-placeholder'
 import { type MutationResult, runMutation } from '@/lib/mutation-result'
 import { prisma } from '@/lib/prisma'
@@ -9,7 +9,6 @@ import { updateResumeSchema } from '../schemas/resume.schema'
 
 /** Replaces the singleton `Resume` row's content — see `update-hero.ts` for why this is an upsert-by-lookup, not a true `upsert`. */
 export async function updateResume(input: unknown): Promise<MutationResult<Resume>> {
-  // TODO(auth, Phase 6): only an authenticated admin may reach this point.
   await assertAdminAccess()
 
   return runMutation(

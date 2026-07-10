@@ -75,8 +75,8 @@ export function MobileNavDrawer({ open, scrolled, shouldReduceMotion, items, act
           exit={shouldReduceMotion ? undefined : { opacity: 0, height: 0 }}
           transition={{ duration: 0.24, ease: [0.32, 0.72, 0, 1] }}
           className={cn(
-            'overflow-hidden border-t border-white/[0.05] px-4 pb-4 [backdrop-filter:blur(24px)] md:hidden',
-            scrolled ? 'bg-[rgba(3,3,8,0.95)]' : 'bg-[rgba(3,3,8,0.80)]',
+            'overflow-hidden border-t border-[var(--chrome-border)] px-4 pb-4 [backdrop-filter:blur(24px)] md:hidden',
+            scrolled ? 'bg-[var(--chrome-bg)]' : 'bg-[color-mix(in_srgb,var(--color-background)_80%,transparent)]',
           )}
         >
           <div className="mx-auto grid max-w-6xl grid-cols-2 gap-1.5 pt-3">

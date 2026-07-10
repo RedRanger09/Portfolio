@@ -1,12 +1,14 @@
 'use server'
 
-import { assertAdminAccess } from '@/lib/auth-placeholder'
+import { assertAdminAccess } from '@/lib/auth'
 import { recordAuditEvent } from '@/lib/audit-placeholder'
 import { MutationNotFoundError, type MutationResult, runMutation } from '@/lib/mutation-result'
 import { prisma } from '@/lib/prisma'
 import { toJson } from '@/lib/prisma-json'
 import { resolveTechnologyIds } from '@/lib/technology-resolver'
 import { PROJECT_INCLUDE, type ProjectRow } from '../data'
+import { assertUniqueProjectSlug } from '../lib/project-slug'
+import { resolveProjectScreenshotWrite } from '../lib/project-screenshot'
 import { updateProjectSchema } from '../schemas/project.schema'
 
 /**
@@ -20,14 +22,18 @@ import { updateProjectSchema } from '../schemas/project.schema'
  * same transaction as the parent row update.
  */
 export async function updateProject(input: unknown): Promise<MutationResult<ProjectRow>> {
-  // TODO(auth, Phase 6): only an authenticated admin may reach this point.
   await assertAdminAccess()
 
   return runMutation(
     updateProjectSchema,
     input,
     async (data) => {
-      const { id, techStack, demo, github, liveDemo, architectureImage, ragPipelineImage, metrics, gallery, ...rest } = data
+      const { id, techStack, demo, github, liveDemo, architectureImage, ragPipelineImage, metrics, gallery, screenshot, screenshotMediaId, heroEyebrow, ...rest } = data
+
+      const screenshotWrite =
+        screenshot !== undefined || screenshotMediaId !== undefined
+          ? await resolveProjectScreenshotWrite({ screenshot, screenshotMediaId })
+          : null
 
       const project = await prisma.$transaction(async (tx) => {
         const existing = await tx.project.findUnique({ where: { id }, select: { id: true } })
@@ -35,15 +41,24 @@ export async function updateProject(input: unknown): Promise<MutationResult<Proj
           throw new MutationNotFoundError(`Project "${id}" does not exist.`)
         }
 
+        if (rest.slug !== undefined) {
+          await assertUniqueProjectSlug(rest.slug, id)
+        }
+
         await tx.project.update({
           where: { id },
           data: {
             ...rest,
+            ...(screenshotWrite && {
+              screenshot: screenshotWrite.screenshot,
+              screenshotMediaId: screenshotWrite.screenshotMediaId ?? null,
+            }),
+            ...(heroEyebrow !== undefined && { heroEyebrow: heroEyebrow.trim() || null }),
             ...(github !== undefined && { github: github || null }),
             ...(liveDemo !== undefined && { liveDemo: liveDemo || null }),
             ...(architectureImage !== undefined && { architectureImage: architectureImage || null }),
             ...(ragPipelineImage !== undefined && { ragPipelineImage: ragPipelineImage || null }),
-            ...(demo !== undefined && { demoLabel: demo?.label ?? null, demoHref: demo?.href ?? null }),
+            ...(demo !== undefined && { demoLabel: demo?.label ?? null, demoHref: demo?.href || null }),
             ...(metrics !== undefined && { metrics: toJson(metrics) }),
             ...(gallery !== undefined && { gallery: toJson(gallery) }),
           },

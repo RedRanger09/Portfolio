@@ -1,12 +1,14 @@
 'use server'
 
-import { assertAdminAccess } from '@/lib/auth-placeholder'
+import { assertAdminAccess } from '@/lib/auth'
 import { recordAuditEvent } from '@/lib/audit-placeholder'
 import { type MutationResult, runMutation } from '@/lib/mutation-result'
 import { prisma } from '@/lib/prisma'
 import { toJson } from '@/lib/prisma-json'
 import { resolveTechnologyIds } from '@/lib/technology-resolver'
 import { PROJECT_INCLUDE, type ProjectRow } from '../data'
+import { assertUniqueProjectSlug } from '../lib/project-slug'
+import { resolveProjectScreenshotWrite } from '../lib/project-screenshot'
 import { createProjectSchema } from '../schemas/project.schema'
 
 /**
@@ -18,13 +20,19 @@ import { createProjectSchema } from '../schemas/project.schema'
  * transaction rule calls for.
  */
 export async function createProject(input: unknown): Promise<MutationResult<ProjectRow>> {
-  // TODO(auth, Phase 6): only an authenticated admin may reach this point.
   await assertAdminAccess()
 
   return runMutation(
     createProjectSchema,
     input,
     async (data) => {
+      await assertUniqueProjectSlug(data.slug)
+
+      const screenshotWrite = await resolveProjectScreenshotWrite({
+        screenshot: data.screenshot,
+        screenshotMediaId: data.screenshotMediaId ?? null,
+      })
+
       const project = await prisma.$transaction(async (tx) => {
         const order = data.order ?? (await tx.project.count())
 
@@ -35,13 +43,15 @@ export async function createProject(input: unknown): Promise<MutationResult<Proj
             isPlaceholder: data.isPlaceholder,
             name: data.name,
             category: data.category,
+            heroEyebrow: data.heroEyebrow?.trim() || null,
             tagline: data.tagline,
             description: data.description,
             github: data.github || null,
             liveDemo: data.liveDemo || null,
             demoLabel: data.demo?.label ?? null,
-            demoHref: data.demo?.href ?? null,
-            screenshot: data.screenshot,
+            demoHref: data.demo?.href || null,
+            screenshot: screenshotWrite.screenshot!,
+            screenshotMediaId: screenshotWrite.screenshotMediaId ?? null,
             architectureImage: data.architectureImage || null,
             ragPipelineImage: data.ragPipelineImage || null,
             metrics: toJson(data.metrics),
@@ -53,6 +63,31 @@ export async function createProject(input: unknown): Promise<MutationResult<Proj
             lessonsLearned: data.lessonsLearned,
             futureImprovements: data.futureImprovements,
             gallery: toJson(data.gallery),
+            overviewTitle: data.overviewTitle,
+            problemTitle: data.problemTitle,
+            techStackTitle: data.techStackTitle,
+            architectureTitle: data.architectureTitle,
+            implementationTitle: data.implementationTitle,
+            challengesTitle: data.challengesTitle,
+            lessonsLearnedTitle: data.lessonsLearnedTitle,
+            futureImprovementsTitle: data.futureImprovementsTitle,
+            galleryTitle: data.galleryTitle,
+            videoTitle: data.videoTitle,
+            liveDemoTitle: data.liveDemoTitle,
+            showOverview: data.showOverview,
+            showProblem: data.showProblem,
+            showTechStack: data.showTechStack,
+            showArchitecture: data.showArchitecture,
+            showImplementation: data.showImplementation,
+            showChallenges: data.showChallenges,
+            showLessonsLearned: data.showLessonsLearned,
+            showFutureImprovements: data.showFutureImprovements,
+            showGallery: data.showGallery,
+            showVideo: data.showVideo,
+            showLiveDemo: data.showLiveDemo,
+            showMetrics: data.showMetrics,
+            showArchitectureImage: data.showArchitectureImage,
+            showRagPipelineImage: data.showRagPipelineImage,
             order,
           },
         })

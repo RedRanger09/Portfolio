@@ -1,7 +1,7 @@
 'use server'
 
 import type { Education } from '@prisma/client'
-import { assertAdminAccess } from '@/lib/auth-placeholder'
+import { assertAdminAccess } from '@/lib/auth'
 import { recordAuditEvent } from '@/lib/audit-placeholder'
 import { type MutationResult, runMutation } from '@/lib/mutation-result'
 import { prisma } from '@/lib/prisma'
@@ -10,7 +10,6 @@ import { createEducationSchema } from '../schemas/education.schema'
 
 /** Creates a new `Education` entry. Single-table write — no transaction needed. */
 export async function createEducation(input: unknown): Promise<MutationResult<Education>> {
-  // TODO(auth, Phase 6): only an authenticated admin may reach this point.
   await assertAdminAccess()
 
   return runMutation(

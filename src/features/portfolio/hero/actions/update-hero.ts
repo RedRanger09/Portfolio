@@ -1,7 +1,7 @@
 'use server'
 
 import type { Hero } from '@prisma/client'
-import { assertAdminAccess } from '@/lib/auth-placeholder'
+import { assertAdminAccess } from '@/lib/auth'
 import { recordAuditEvent } from '@/lib/audit-placeholder'
 import { type MutationResult, runMutation } from '@/lib/mutation-result'
 import { prisma } from '@/lib/prisma'
@@ -17,7 +17,6 @@ import { updateHeroSchema } from '../schemas/hero.schema'
  * `createHero`/`deleteHero`.
  */
 export async function updateHero(input: unknown): Promise<MutationResult<Hero>> {
-  // TODO(auth, Phase 6): only an authenticated admin may reach this point.
   await assertAdminAccess()
 
   return runMutation(

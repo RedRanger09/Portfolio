@@ -75,6 +75,20 @@ enum JourneyIcon {
   TERMINAL_SQUARE
 }
 
+/// Where a `Media` row was stored — Cloudinary for uploads, LOCAL reserved
+/// for legacy seeded paths not yet migrated into the media library.
+enum MediaProvider {
+  CLOUDINARY
+  LOCAL
+}
+
+/// Asset kind — extensible for resume PDFs and future video demos.
+enum MediaType {
+  IMAGE
+  VIDEO
+  PDF
+}
+
 // ─────────────────────────────────────────────────────────────────────────
 // Configuration content — singletons
 //
@@ -276,6 +290,12 @@ model Project {
   demoHref  String?
 
   screenshot        String
+  /// Optional FK to a `Media` row when the thumbnail was uploaded via the
+  /// media library. `screenshot` remains denormalized as the public URL/path
+  /// so existing reads and seeded local assets keep working without joins.
+  screenshotMediaId String?
+  screenshotMedia   Media?  @relation("ProjectScreenshotMedia", fields: [screenshotMediaId], references: [id], onDelete: SetNull)
+
   architectureImage String?
   ragPipelineImage  String?
 
@@ -297,6 +317,38 @@ model Project {
   /// for the same reasoning.
   gallery Json?
 
+  /// Optional hero eyebrow override. When empty, the public case study uses `category`.
+  heroEyebrow String?
+
+  /// Editable section headings — defaults preserve the existing public copy.
+  overviewTitle            String @default("Overview")
+  problemTitle             String @default("Problem")
+  techStackTitle           String @default("Tech Stack")
+  architectureTitle        String @default("Architecture")
+  implementationTitle      String @default("Implementation")
+  challengesTitle          String @default("Challenges")
+  lessonsLearnedTitle      String @default("Lessons learned")
+  futureImprovementsTitle  String @default("Future improvements")
+  galleryTitle             String @default("Screenshots")
+  videoTitle               String @default("Demo video")
+  liveDemoTitle            String @default("Live demo")
+
+  /// Per-section visibility. Defaults `true` so existing seeded projects keep rendering.
+  showOverview             Boolean @default(true)
+  showProblem              Boolean @default(true)
+  showTechStack            Boolean @default(true)
+  showArchitecture         Boolean @default(true)
+  showImplementation       Boolean @default(true)
+  showChallenges           Boolean @default(true)
+  showLessonsLearned       Boolean @default(true)
+  showFutureImprovements   Boolean @default(true)
+  showGallery              Boolean @default(true)
+  showVideo                Boolean @default(true)
+  showLiveDemo             Boolean @default(true)
+  showMetrics              Boolean @default(true)
+  showArchitectureImage    Boolean @default(true)
+  showRagPipelineImage     Boolean @default(true)
+
   technologies ProjectTechnology[]
 
   /// Orderable pattern — curated display order in the Projects grid.
@@ -311,6 +363,71 @@ model Project {
 
   @@index([featured])
   @@index([order])
+  @@index([screenshotMediaId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Media — reusable asset infrastructure (Phase 9)
+// ─────────────────────────────────────────────────────────────────────────
+
+/// Canonical record for an uploaded file. Mirrors `domain-model.md §5`.
+model Media {
+  id String @id @default(cuid())
+
+  /// Cloudinary `public_id` — null for legacy/local-only rows.
+  publicId  String?
+  url       String
+  secureUrl String?
+  provider  MediaProvider @default(CLOUDINARY)
+  type      MediaType     @default(IMAGE)
+
+  /// Environment-prefixed folder path, e.g. `dev/projects`.
+  folder String
+
+  width   Int?
+  height  Int?
+  format  String?
+  bytes   Int?
+  altText String?
+
+  /// Clerk owner email until a `User` table exists.
+  uploadedByEmail String?
+
+  deletedAt DateTime?
+
+  projectScreenshots Project[]         @relation("ProjectScreenshotMedia")
+  blogFeaturedImages BlogPost[]        @relation("BlogFeaturedImage")
+  siteOgImages       SiteSettings[]    @relation("SiteOgImage")
+  attachments        MediaAttachment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([folder, deletedAt])
+  @@index([deletedAt])
+  @@index([provider])
+}
+
+/// Polymorphic join for one-to-many media slots (galleries, inline images).
+/// Singleton slots (project thumbnail, certificate image) use direct FKs instead.
+model MediaAttachment {
+  id String @id @default(cuid())
+
+  mediaId String
+  media   Media @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  attachableType String
+  attachableId   String
+  role           String
+  /// Optional display caption — distinct from `Media.altText` (accessibility).
+  caption        String?
+  order          Int    @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([attachableType, attachableId, role, order])
+  @@unique([mediaId, attachableType, attachableId, role])
 }
 
 /// Join: which Technologies a Project uses, in display order. Mirrors
@@ -490,4 +607,109 @@ model JourneyMilestone {
   updatedAt DateTime @updatedAt
 
   @@index([order])
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// Admin platform — Blog, Messages, AI config, Site settings (Phase 12)
+// ─────────────────────────────────────────────────────────────────────────
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum ContactMessageStatus {
+  UNREAD
+  READ
+  ARCHIVED
+}
+
+/// Blog post — mirrors the Projects CMS collection pattern.
+model BlogPost {
+  id String @id @default(cuid())
+
+  slug    String         @unique
+  title   String
+  excerpt String         @db.Text
+  content String         @db.Text
+  status  BlogPostStatus @default(DRAFT)
+  tags    String[]
+
+  featuredImage        String
+  featuredImageMediaId String?
+  featuredImageMedia   Media?  @relation("BlogFeaturedImage", fields: [featuredImageMediaId], references: [id], onDelete: SetNull)
+
+  metaTitle       String?
+  metaDescription String? @db.Text
+
+  publishedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([publishedAt])
+  @@index([featuredImageMediaId])
+}
+
+/// Inbound contact form submission — admin inbox only (no Resend changes).
+model ContactMessage {
+  id String @id @default(cuid())
+
+  name    String
+  email   String
+  subject String
+  body    String               @db.Text
+  status  ContactMessageStatus @default(UNREAD)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// Singleton — AI assistant configuration (chatbot not implemented).
+model AiConfiguration {
+  id String @id @default(cuid())
+
+  provider            String @default("openai")
+  chatModel           String @default("gpt-4o-mini")
+  embeddingModel      String @default("text-embedding-3-small")
+  temperature         Float  @default(0.7)
+  maxTokens           Int    @default(1024)
+  embeddingDimensions Int    @default(1536)
+
+  systemPrompt  String @db.Text
+  chatbotPrompt String @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+/// Singleton — global site settings editable from admin.
+model SiteSettings {
+  id String @id @default(cuid())
+
+  siteTitle       String
+  siteDescription String   @db.Text
+  keywords        String[]
+
+  ogImage        String
+  ogImageMediaId String?
+  ogImageMedia   Media?  @relation("SiteOgImage", fields: [ogImageMediaId], references: [id], onDelete: SetNull)
+  favicon        String
+
+  github          String
+  linkedin        String
+  githubDisplay   String
+  linkedinDisplay String
+
+  maintenanceMode    Boolean @default(false)
+  maintenanceMessage String? @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ogImageMediaId])
 }

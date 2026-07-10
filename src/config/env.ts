@@ -14,15 +14,10 @@
  *      Zod only changed this file's internals — no call site elsewhere in
  *      the app changed.
  *
- * Almost everything below is `.optional()` deliberately: Cloudinary,
- * Resend, OpenAI, and Clerk aren't integrated yet (see `@future` tags), and
- * `DATABASE_URL`/`DIRECT_URL` are real but not yet pointed at a live Neon
- * project. None of these are required for the app to build or run
- * today — `lib/db-health.ts` and the `lib/{cloudinary,resend,ai}.ts`
- * placeholders are what fail loudly, and only when something actually
- * *uses* an unconfigured service, not at startup. Zod's job here is
- * "reject garbage if it's set", not "require every future integration up
- * front".
+ * Almost everything below is `.optional()` deliberately so local development
+ * and CI builds can run without every integration configured. On Vercel
+ * Production (`VERCEL_ENV=production`), `assertProductionEnv()` enforces the
+ * variables required for a live deployment — see that function below.
  *
  * Naming: `NEXT_PUBLIC_*` vars are inlined into the client bundle by
  * Next.js — never put secrets behind that prefix. Everything else here is
@@ -47,11 +42,17 @@ const envSchema = z.object({
   // by the running application itself.
   DIRECT_URL: z.string().url().startsWith('postgres').optional(),
 
-  // @future Clerk authentication — Admin Dashboard.
+  // Clerk authentication — Admin Dashboard.
   CLERK_SECRET_KEY: z.string().min(1).optional(),
   NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1).optional(),
+  NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().startsWith('/').optional(),
+  NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().startsWith('/').optional(),
+  NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: z.string().startsWith('/').optional(),
+  NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: z.string().startsWith('/').optional(),
+  // Owner email allowed to access `/admin` and mutation Server Actions.
+  ADMIN_EMAIL: z.string().email().optional(),
 
-  // @future Cloudinary — project screenshots, certificate images.
+  // Cloudinary — media uploads (server-side).
   CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
   CLOUDINARY_API_KEY: z.string().min(1).optional(),
   CLOUDINARY_API_SECRET: z.string().min(1).optional(),
@@ -63,8 +64,16 @@ const envSchema = z.object({
   // @future AI Assistant (OpenAI — gpt-4o-mini + text-embedding-3-small).
   OPENAI_API_KEY: z.string().min(1).optional(),
 
-  // @future Google Analytics.
-  GOOGLE_ANALYTICS_ID: z.string().min(1).optional(),
+  // Google Analytics 4 — public measurement ID (G-XXXXXXXX) for client tracking.
+  GOOGLE_ANALYTICS_ID: z
+    .string()
+    .regex(/^G-[A-Z0-9]+$/i, 'Must be a GA4 measurement ID (G-XXXXXXXX).')
+    .optional(),
+  // Numeric GA4 property ID for the Data API (Admin → Property settings).
+  GA4_PROPERTY_ID: z.string().regex(/^\d+$/, 'Must be a numeric GA4 property ID.').optional(),
+  // Service account used by the Analytics Data API (server-only).
+  GOOGLE_SERVICE_ACCOUNT_EMAIL: z.string().email().optional(),
+  GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: z.string().min(1).optional(),
 })
 
 /**
@@ -90,7 +99,35 @@ function parseEnv() {
   return result.data
 }
 
+/** Required on Vercel Production — fails fast at cold start instead of mid-request. */
+function assertProductionEnv(data: z.infer<typeof envSchema>): void {
+  if (process.env.VERCEL_ENV !== 'production') {
+    return
+  }
+
+  const required = [
+    'NEXT_PUBLIC_APP_URL',
+    'DATABASE_URL',
+    'DIRECT_URL',
+    'CLERK_SECRET_KEY',
+    'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
+    'ADMIN_EMAIL',
+    'CLOUDINARY_CLOUD_NAME',
+    'CLOUDINARY_API_KEY',
+    'CLOUDINARY_API_SECRET',
+  ] as const
+
+  const missing = required.filter((key) => !data[key])
+
+  if (missing.length > 0) {
+    throw new Error(
+      `Missing required production environment variables:\n${missing.map((key) => `  - ${key}`).join('\n')}\n\nSet them in the Vercel Production environment (see .env.example).`,
+    )
+  }
+}
+
 const parsed = parseEnv()
+assertProductionEnv(parsed)
 
 export interface Env {
   /** Public site URL — canonical links, OG metadata, sitemap generation. */
@@ -110,16 +147,26 @@ export interface Env {
    */
   directUrl?: string
 
-  /** @future Clerk secret key (server-only) — Admin Dashboard auth. */
+  /** Clerk secret key (server-only) — Admin Dashboard auth. */
   clerkSecretKey?: string
-  /** @future Clerk publishable key (safe for the client bundle). */
+  /** Clerk publishable key (safe for the client bundle). */
   clerkPublishableKey?: string
+  /** Clerk sign-in path — defaults to `/sign-in`. */
+  clerkSignInUrl: string
+  /** Clerk sign-up path — defaults to `/sign-up`. */
+  clerkSignUpUrl: string
+  /** Post sign-in redirect — defaults to `/admin`. */
+  clerkAfterSignInUrl: string
+  /** Post sign-up redirect — defaults to `/admin`. */
+  clerkAfterSignUpUrl: string
+  /** Owner email allowed to access the admin area. */
+  adminEmail?: string
 
-  /** @future Cloudinary cloud name — project screenshots, certificate images. */
+  /** Cloudinary cloud name — project screenshots, certificate images, media library. */
   cloudinaryCloudName?: string
-  /** @future Cloudinary API key — required to sign upload requests. */
+  /** Cloudinary API key — server-side uploads only. */
   cloudinaryApiKey?: string
-  /** @future Cloudinary API secret (server-only) — signs upload requests, never sent to the client. */
+  /** Cloudinary API secret (server-only) — never sent to the client. */
   cloudinaryApiSecret?: string
 
   /** @future Resend API key — contact form / resume-request emails. */
@@ -130,8 +177,14 @@ export interface Env {
   /** @future OpenAI API key — AI Assistant chat (gpt-4o-mini) + embeddings (text-embedding-3-small). */
   openaiApiKey?: string
 
-  /** @future Google Analytics measurement ID. */
+  /** GA4 measurement ID (G-XXXXXXXX) — public site tracking only. */
   googleAnalyticsId?: string
+  /** Numeric GA4 property ID for the Analytics Data API. */
+  ga4PropertyId?: string
+  /** Service account email for the Analytics Data API (server-only). */
+  googleServiceAccountEmail?: string
+  /** Service account private key PEM for the Analytics Data API (server-only). */
+  googleServiceAccountPrivateKey?: string
 }
 
 export const env: Env = {
@@ -142,6 +195,11 @@ export const env: Env = {
 
   clerkSecretKey: parsed.CLERK_SECRET_KEY,
   clerkPublishableKey: parsed.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY,
+  clerkSignInUrl: parsed.NEXT_PUBLIC_CLERK_SIGN_IN_URL ?? '/sign-in',
+  clerkSignUpUrl: parsed.NEXT_PUBLIC_CLERK_SIGN_UP_URL ?? '/sign-up',
+  clerkAfterSignInUrl: parsed.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL ?? '/admin',
+  clerkAfterSignUpUrl: parsed.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL ?? '/admin',
+  adminEmail: parsed.ADMIN_EMAIL,
 
   cloudinaryCloudName: parsed.CLOUDINARY_CLOUD_NAME,
   cloudinaryApiKey: parsed.CLOUDINARY_API_KEY,
@@ -153,4 +211,7 @@ export const env: Env = {
   openaiApiKey: parsed.OPENAI_API_KEY,
 
   googleAnalyticsId: parsed.GOOGLE_ANALYTICS_ID,
+  ga4PropertyId: parsed.GA4_PROPERTY_ID,
+  googleServiceAccountEmail: parsed.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+  googleServiceAccountPrivateKey: parsed.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(/\\n/g, '\n'),
 }

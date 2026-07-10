@@ -1,7 +1,7 @@
 'use server'
 
 import type { SkillIcon as PrismaSkillIcon } from '@prisma/client'
-import { assertAdminAccess } from '@/lib/auth-placeholder'
+import { assertAdminAccess } from '@/lib/auth'
 import { recordAuditEvent } from '@/lib/audit-placeholder'
 import { type MutationResult, runMutation } from '@/lib/mutation-result'
 import { prisma } from '@/lib/prisma'
@@ -26,7 +26,6 @@ const SKILL_ICON_TO_DB: Record<SkillGroupIcon, PrismaSkillIcon> = {
  * "project + join rows" transaction shape as `create-project.ts`.
  */
 export async function createSkillCategory(input: unknown): Promise<MutationResult<SkillCategoryRow>> {
-  // TODO(auth, Phase 6): only an authenticated admin may reach this point.
   await assertAdminAccess()
 
   return runMutation(

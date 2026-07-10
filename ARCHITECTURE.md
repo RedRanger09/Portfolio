@@ -14,9 +14,15 @@ If you're adding a feature and unsure where something belongs, start here.
 - **Phase 5.1** — Infrastructure foundation: Prisma installed and connected to Neon, `lib/` bootstrapped, health-check endpoint, config placeholders for Cloudinary/Resend/AI. No models, no CRUD yet — see `docs/infrastructure/phase-5-1-implementation-notes.md`. ✅
 - **Phase 5.2** — Core Portfolio Prisma schema (12 models, 4 enums) authored from `docs/architecture/domain-model.md` and migrated to Neon, still empty — see `docs/infrastructure/phase-5-2-implementation-notes.md`. ✅
 - **Phase 5.3** — Seeded Neon with the real portfolio content and switched every feature's `data.ts` from static arrays to Prisma queries (with a static fallback on database failure). Added `JourneyMilestone` (the one Phase 5.2 scoped out). No CRUD, API routes, or admin surface yet — see `docs/infrastructure/phase-5-3-implementation-notes.md`. ✅
-- **Phase 5.4** — Backend mutation layer: one `create`/`update`/`delete` Next.js Server Action per list entity and one `update` action per singleton, each feature owning its own Zod schema(s) and validating through a shared `MutationResult<T>`/`runMutation()` pattern (`src/lib/mutation-result.ts`). Documented no-op placeholders for future Clerk authorization (`src/lib/auth-placeholder.ts`) and audit logging (`src/lib/audit-placeholder.ts`). Still no admin UI, forms, or API routes calling into any of this — see `docs/infrastructure/phase-5-4-implementation-notes.md`. ✅
-- **Phase 6** (this document) — Admin Foundation: the complete `/admin` route structure and dashboard shell (sidebar, topbar, breadcrumbs, mobile nav), one placeholder page per future module (Projects, Hero, About, Journey, Skills, Education, Certificates, Resume, Contact, Media, Blog, Messages, Analytics, AI, Settings), and the shared admin component set (`AdminCard`, `StatCard`, `SectionTitle`, `EmptyState`, `AdminTableShell`, `LoadingCard`, `ModulePlaceholder`). Required restructuring `app/` into a `(site)` route group + a sibling `admin/` root layout (two independent root layouts, Next.js's documented pattern for this exact case) plus `app/global-not-found.tsx` for the one 404 case that pattern costs you. No CRUD, forms, or authentication wired up yet — `assertAdminAccess()` is called but still a no-op — see `docs/infrastructure/phase-6-implementation-notes.md`. ✅
-- **Phase 7** (next) — Clerk authentication (wires up `assertAdminAccess()` for real); first real CRUD module wired to the mutation actions Phase 5.4 built.
+- **Phase 5.4** — Backend mutation layer: one `create`/`update`/`delete` Next.js Server Action per list entity and one `update` action per singleton, each feature owning its own Zod schema(s) and validating through a shared `MutationResult<T>`/`runMutation()` pattern (`src/lib/mutation-result.ts`). Documented no-op placeholders for future Clerk authorization (`src/lib/auth.ts`, wired in Phase 7) and audit logging (`src/lib/audit-placeholder.ts`). Still no admin UI, forms, or API routes calling into any of this — see `docs/infrastructure/phase-5-4-implementation-notes.md`. ✅
+- **Phase 6** — Admin Foundation: the complete `/admin` route structure and dashboard shell (sidebar, topbar, breadcrumbs, mobile nav), one placeholder page per future module, shared admin components, `(site)` route group + sibling `admin/` root layout, `global-not-found.tsx`. No CRUD or authentication yet — see `docs/infrastructure/phase-6-implementation-notes.md`. ✅
+- **Phase 7** — Clerk authentication: `ClerkProvider`, `middleware.ts` protecting `/admin/*`, `lib/auth.ts` replacing the no-op placeholder with server-side session + `ADMIN_EMAIL` owner authorization, sign-in/sign-up/unauthorized routes, admin topbar account menu, `FORBIDDEN` mutation results. Public portfolio stays fully public — see `docs/infrastructure/phase-7-implementation-notes.md`. ✅
+- **Phase 8** — Projects CMS: first real admin CRUD module wired to Phase 5.4 Server Actions — list/search/sort/filter/pagination, reusable `ProjectEditor`, duplicate action, shared admin form/table primitives. Published maps to `!isPlaceholder` until a dedicated column exists — see `docs/infrastructure/phase-8-implementation-notes.md`. ✅
+- **Phase 9** — Media Infrastructure: Cloudinary SDK, `Media`/`MediaAttachment` Prisma models, server-side upload/replace/delete, reusable `MediaUploadField`, Projects thumbnail integration, `/admin/media` library — see `docs/infrastructure/phase-9-implementation-notes.md`. ✅
+- **Phase 10** — Complete Content CMS: Hero, About, Journey, Skills, Education, Certifications, Resume, Contact admin modules mirroring the Projects reference pattern — see `docs/infrastructure/phase-10-implementation-notes.md`. ✅
+- **Phase 11** — Production hardening: security headers, robots/sitemap, production env validation, global error boundary, CI workflow, metadata/SEO fixes — see `docs/infrastructure/phase-11-implementation-notes.md`. ✅
+- **Phase 12** — Complete Admin Platform: Media Library (enhanced), Blog CMS, Messages, Analytics, AI configuration, Settings — see `docs/infrastructure/phase-12-implementation-notes.md`. ✅
+- **Phase 13** — Real Google Analytics 4 integration: Data API reporting, public gtag tracking, cached admin dashboard, no fabricated metrics — see `docs/infrastructure/phase-13-implementation-notes.md`. ✅
 
 ---
 
@@ -74,11 +80,17 @@ src/
 │  │     # `resume/` intentionally doesn't exist yet — see §3.
 │  │     # `components/` and `hooks/` subfolders arrive per-feature in Phase 3.
 │  │     # every feature above also has `schemas/` + `actions/` — Phase 5.4.
-│  └─ admin/                    /admin's own components — not a "portfolio" section
+│  └─ media/                    Reusable asset infrastructure — Phase 9
+│     ├─ types.ts, data.ts, schemas/, lib/, actions/, components/
+│  └─ admin/
 │     ├─ layout/       (admin-shell.tsx, admin-topbar.tsx, admin-footer.tsx, index.ts)
 │     ├─ navigation/   (admin-nav-items.ts, admin-sidebar.tsx, admin-mobile-nav.tsx, admin-breadcrumbs.tsx, index.ts)
 │     ├─ dashboard/    (admin-dashboard-overview.tsx, index.ts)
-│     └─ shared/       (admin-card.tsx, stat-card.tsx, section-title.tsx, empty-state.tsx, admin-table-shell.tsx, loading-card.tsx, module-placeholder.tsx, index.ts)
+│     ├─ projects/     (Phase 8 CMS reference)
+│     ├─ hero/ about/ contact/ resume/   (Phase 10 singleton CMS)
+│     ├─ journey/ skills/ education/ certifications/  (Phase 10 collection CMS)
+│     ├─ media/        (Phase 9 media library UI)
+│     └─ shared/       (admin-card.tsx, stat-card.tsx, section-title.tsx, empty-state.tsx, admin-table-shell.tsx, loading-card.tsx, module-placeholder.tsx, admin-badge.tsx, admin-search-input.tsx, admin-pagination.tsx, admin-field.tsx, index.ts)
 │
 ├─ components/
 │  ├─ layout/                   App-shell chrome — one instance per app, not reusable
@@ -113,6 +125,8 @@ src/
 └─ lib/                         Vendor/infra clients — the boundary where the app talks outward (§5)
    ├─ prisma.ts                  PrismaClient singleton — connects to Neon Postgres
    ├─ db-health.ts               checkDatabaseConnection() — used by app/api/health
+   ├─ auth.ts                    Clerk session + ADMIN_EMAIL owner authorization (Phase 7)
+   ├─ mutation-result.ts         MutationResult<T> + runMutation() wrapper (Phase 5.4)
    ├─ cloudinary.ts               @future — config placeholder, no SDK installed yet
    ├─ resend.ts                   @future — config placeholder, no SDK installed yet
    └─ ai.ts                       @future — config placeholder (models decided, no SDK installed yet)
@@ -359,11 +373,12 @@ though its children are a mix.
 | System | Attaches at |
 |---|---|
 | **Prisma** | `lib/prisma.ts` (client, connected to Neon — done in Phase 5.1) + each feature's `data.ts` function bodies swap from static arrays to queries, once `prisma/schema.prisma` has real models (Phase 5.2/6). Types in each feature's `types.ts` become the shape Prisma's generated types are mapped to (or replaced by them directly). |
-| **Admin Dashboard** | Shell built in Phase 6 (`app/admin/`, `src/features/admin/`) — sidebar, topbar, breadcrumbs, 15 module placeholders. What's left: Clerk wires into the existing `assertAdminAccess()` call in `app/admin/layout.tsx`; each module page swaps `<ModulePlaceholder>` for a Server Component reading via the feature's existing `getProjects()`/`getCertifications()`/etc. and mutating via the Server Actions already built in Phase 5.4 (`create-project.ts`, `update-project.ts`, ...). |
+| **Clerk auth** | `lib/auth.ts` (live — Phase 7) + `src/middleware.ts` protecting `/admin/*` + `ClerkProvider` in `app-providers.tsx`. `assertAdminAccess('route')` in `app/admin/layout.tsx`; `assertAdminAccess()` (mutation mode) in every Server Action. Owner check via `ADMIN_EMAIL` env var — RBAC extension point is `authorizeOwnerAccess()`. |
+| **Admin Dashboard** | Shell (Phase 6), auth (Phase 7). **Full portfolio CMS** (Phases 8–10): Projects, Media, Hero, About, Journey, Skills, Education, Certifications, Resume, Contact. **Platform modules** (Phase 12): Blog, Messages, Analytics, AI config, Settings. |
 | **Blog** | New `src/features/blog/` (mirrors `portfolio/`) + `app/blog/` routes. Reuses `<SiteShell>`. |
 | **AI Chatbot** | `<ChatbotProvider>` slot in `app-providers.tsx` (§7) + a new `src/features/chatbot/` (or a `shared/components/` widget if it's a single floating button with no dedicated content model). |
 | **Resend (contact form)** | `lib/resend.ts` client, called from a new `app/api/contact/route.ts`, using `env.resendApiKey`. |
-| **Cloudinary** | `lib/cloudinary.ts` client; `screenshot`/`architectureImage`/`image` fields in feature types stay `string` URLs — only *where* that URL points to changes (from `/project-images/*.png` to a Cloudinary URL). |
+| **Cloudinary** | `lib/cloudinary.ts` (live — Phase 9) + `features/media/` subsystem. `Media`/`MediaAttachment` Prisma models; `MediaUploadField` for CMS modules. Denormalized URL columns (e.g. `Project.screenshot`) remain during transition. |
 
 ## 14. Naming conventions
 

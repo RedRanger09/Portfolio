@@ -1,15 +1,17 @@
 import type { Metadata } from 'next'
-import { Mail } from 'lucide-react'
-import { ModulePlaceholder } from '@/features/admin/shared'
+import Link from 'next/link'
+import { ExternalLink } from 'lucide-react'
+import { ContactEditor, getContactForAdmin, getDefaultContactEditorValues, mapContactRowToEditorValues } from '@/features/admin/contact'
+import { SectionTitle } from '@/features/admin/shared'
 
 export const metadata: Metadata = { title: 'Contact' }
 
-export default function AdminContactPage() {
+export default async function AdminContactPage() {
+  const row = await getContactForAdmin()
   return (
-    <ModulePlaceholder
-      title="Contact"
-      description="Edit contact copy and manage the social/contact method links."
-      icon={Mail}
-    />
+    <div className="space-y-6">
+      <SectionTitle title="Contact" description="Edit contact copy and social channel cards." action={<Link href="/#contact" target="_blank" className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-white"><ExternalLink className="h-4 w-4" /> Preview</Link>} />
+      <ContactEditor initialValues={row ? mapContactRowToEditorValues(row) : getDefaultContactEditorValues()} />
+    </div>
   )
 }

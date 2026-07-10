@@ -14,7 +14,9 @@ interface ProjectDetailHeaderProps {
 export function ProjectDetailHeader({ project }: ProjectDetailHeaderProps) {
   return (
     <div className="rounded-[1.75rem] border border-white/[0.08] bg-surface p-7 shadow-card sm:p-8 lg:p-10">
-      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-amber-400">{project.category}</p>
+      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.32em] text-amber-400">
+        {project.heroEyebrow || project.category}
+      </p>
       <h1 className="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl lg:text-[3.4rem] lg:leading-[1.02]">
         {project.name}
       </h1>

@@ -1,7 +1,7 @@
 'use server'
 
 import type { JourneyMilestone } from '@prisma/client'
-import { assertAdminAccess } from '@/lib/auth-placeholder'
+import { assertAdminAccess } from '@/lib/auth'
 import { recordAuditEvent } from '@/lib/audit-placeholder'
 import { type MutationResult, runMutation } from '@/lib/mutation-result'
 import { prisma } from '@/lib/prisma'
@@ -11,7 +11,6 @@ import { createJourneyMilestoneSchema } from '../schemas/journey-milestone.schem
 
 /** Creates a new `JourneyMilestone`. Single-table write — no transaction needed. */
 export async function createJourneyMilestone(input: unknown): Promise<MutationResult<JourneyMilestone>> {
-  // TODO(auth, Phase 6): only an authenticated admin may reach this point.
   await assertAdminAccess()
 
   return runMutation(

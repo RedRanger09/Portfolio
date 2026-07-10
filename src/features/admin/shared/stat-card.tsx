@@ -5,7 +5,6 @@ import { AdminCard } from './admin-card'
 
 interface StatCardProps {
   label: string
-  /** A placeholder value (e.g. `'—'`) is expected until a module wires up real counts — see `dashboard/admin-dashboard-overview.tsx`. */
   value: string | number
   icon?: LucideIcon
   accent?: AccentColor

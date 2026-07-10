@@ -2,30 +2,75 @@ import Link from 'next/link'
 import { Award, FolderKanban, Milestone, Wrench } from 'lucide-react'
 import { SectionTitle, StatCard, AdminCard } from '../shared'
 import { ADMIN_NAV_GROUPS } from '../navigation/admin-nav-items'
+import type { AdminDashboardStats } from './data'
 
-/**
- * `/admin`'s page content. The stat tiles intentionally show `'—'`
- * rather than a real count — wiring these to `getProjects().length` etc.
- * would be this phase's first bit of "business logic", which the brief
- * explicitly scopes out. Swapping each `value` for a real query is a
- * same-file, same-shape change for whichever phase adds it (the same
- * pattern the read layer itself already used in `features/portfolio/*`).
- */
-export function AdminDashboardOverview() {
+interface AdminDashboardOverviewProps {
+  stats: AdminDashboardStats
+}
+
+function projectsHint(stats: AdminDashboardStats['projects']): string {
+  if (stats.total === 0) return 'No projects yet'
+  return `${stats.published} published · ${stats.drafts} draft${stats.drafts === 1 ? '' : 's'}`
+}
+
+function skillsHint(stats: AdminDashboardStats['skills']): string {
+  if (stats.categories === 0 && stats.technologies === 0) return 'No skills yet'
+  return `${stats.technologies} technolog${stats.technologies === 1 ? 'y' : 'ies'}`
+}
+
+function journeyHint(stats: AdminDashboardStats['journey']): string {
+  if (stats.total === 0) return 'No milestones yet'
+  if (!stats.currentLabel) return `${stats.total} milestone${stats.total === 1 ? '' : 's'}`
+  return stats.currentYear ? `${stats.currentLabel} · ${stats.currentYear}` : stats.currentLabel
+}
+
+function certificationsHint(stats: AdminDashboardStats['certifications']): string {
+  if (stats.total === 0) return 'No certifications yet'
+  if (!stats.mostRecentName) return `${stats.total} total`
+  const suffix = stats.mostRecentDate ? ` · ${stats.mostRecentDate}` : ''
+  return `Latest: ${stats.mostRecentName}${suffix}`
+}
+
+/** Admin home — live portfolio counts from Prisma. */
+export function AdminDashboardOverview({ stats }: AdminDashboardOverviewProps) {
   const moduleLinks = ADMIN_NAV_GROUPS.slice(1).flatMap((group) => group.items)
 
   return (
     <div className="space-y-8">
       <SectionTitle
         title="Dashboard"
-        description="A quick overview of your portfolio content. Live metrics arrive as each module is wired to the database."
+        description="Manage your portfolio, content, media, blog, and platform from one place."
       />
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Projects" value="—" icon={FolderKanban} accent="amber" hint="Wires up with the Projects module" />
-        <StatCard label="Skill categories" value="—" icon={Wrench} accent="emerald" hint="Wires up with the Skills module" />
-        <StatCard label="Journey milestones" value="—" icon={Milestone} accent="purple" hint="Wires up with the Journey module" />
-        <StatCard label="Certifications" value="—" icon={Award} accent="cyan" hint="Wires up with the Certificates module" />
+        <StatCard
+          label="Projects"
+          value={stats.projects.total}
+          icon={FolderKanban}
+          accent="amber"
+          hint={projectsHint(stats.projects)}
+        />
+        <StatCard
+          label="Skill categories"
+          value={stats.skills.categories}
+          icon={Wrench}
+          accent="emerald"
+          hint={skillsHint(stats.skills)}
+        />
+        <StatCard
+          label="Journey milestones"
+          value={stats.journey.total}
+          icon={Milestone}
+          accent="purple"
+          hint={journeyHint(stats.journey)}
+        />
+        <StatCard
+          label="Certifications"
+          value={stats.certifications.total}
+          icon={Award}
+          accent="cyan"
+          hint={certificationsHint(stats.certifications)}
+        />
       </div>
 
       <section aria-labelledby="admin-modules-heading">

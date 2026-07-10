@@ -1,10 +1,11 @@
 import type { Metadata } from 'next'
-import { AdminDashboardOverview } from '@/features/admin/dashboard'
+import { AdminDashboardOverview, getAdminDashboardStats } from '@/features/admin/dashboard'
 
 export const metadata: Metadata = {
   title: 'Dashboard',
 }
 
-export default function AdminDashboardPage() {
-  return <AdminDashboardOverview />
+export default async function AdminDashboardPage() {
+  const stats = await getAdminDashboardStats()
+  return <AdminDashboardOverview stats={stats} />
 }

@@ -39,6 +39,9 @@ import { FALLBACK_SKILL_GROUPS } from '@/features/portfolio/skills/data'
 import type { SkillGroupIcon } from '@/features/portfolio/skills/types'
 import { toJson } from '@/lib/prisma-json'
 import { mapAccentColorToDb } from '@/lib/prisma-enum-mappers'
+import { SITE } from '@/config/site.config'
+import { CHAT_MODEL, EMBEDDING_DIMENSIONS, EMBEDDING_MODEL } from '@/lib/ai'
+import { DEFAULT_AI_CHATBOT_PROMPT, DEFAULT_AI_SYSTEM_PROMPT } from '@/features/ai/data'
 import { slugifyTechnologyName } from '@/lib/technology-resolver'
 
 const prisma = new PrismaClient()
@@ -88,11 +91,17 @@ const JOURNEY_ICON_TO_DB: Record<AppJourneyIcon, JourneyIcon> = {
 
 /** Deletes every row this schema owns, children before parents. */
 async function clearDatabase() {
+  await prisma.mediaAttachment.deleteMany()
   await prisma.socialLink.deleteMany()
   await prisma.projectTechnology.deleteMany()
   await prisma.skill.deleteMany()
   await prisma.contactInformation.deleteMany()
+  await prisma.blogPost.deleteMany()
+  await prisma.contactMessage.deleteMany()
+  await prisma.aiConfiguration.deleteMany()
+  await prisma.siteSettings.deleteMany()
   await prisma.project.deleteMany()
+  await prisma.media.deleteMany()
   await prisma.technology.deleteMany()
   await prisma.skillCategory.deleteMany()
   await prisma.journeyMilestone.deleteMany()
@@ -257,6 +266,7 @@ async function seedProjects(technologyIdByName: Map<string, string>) {
         isPlaceholder: project.isPlaceholder ?? false,
         name: project.name,
         category: project.category,
+        heroEyebrow: project.heroEyebrow || null,
         tagline: project.tagline,
         description: project.description,
         github: project.github || null,
@@ -275,6 +285,31 @@ async function seedProjects(technologyIdByName: Map<string, string>) {
         lessonsLearned: project.lessonsLearned,
         futureImprovements: project.futureImprovements,
         gallery: toJson(project.gallery),
+        overviewTitle: project.overviewTitle,
+        problemTitle: project.problemTitle,
+        techStackTitle: project.techStackTitle,
+        architectureTitle: project.architectureTitle,
+        implementationTitle: project.implementationTitle,
+        challengesTitle: project.challengesTitle,
+        lessonsLearnedTitle: project.lessonsLearnedTitle,
+        futureImprovementsTitle: project.futureImprovementsTitle,
+        galleryTitle: project.galleryTitle,
+        videoTitle: project.videoTitle,
+        liveDemoTitle: project.liveDemoTitle,
+        showOverview: project.showOverview,
+        showProblem: project.showProblem,
+        showTechStack: project.showTechStack,
+        showArchitecture: project.showArchitecture,
+        showImplementation: project.showImplementation,
+        showChallenges: project.showChallenges,
+        showLessonsLearned: project.showLessonsLearned,
+        showFutureImprovements: project.showFutureImprovements,
+        showGallery: project.showGallery,
+        showVideo: project.showVideo,
+        showLiveDemo: project.showLiveDemo,
+        showMetrics: project.showMetrics,
+        showArchitectureImage: project.showArchitectureImage,
+        showRagPipelineImage: project.showRagPipelineImage,
         order: projectIndex,
       },
     })
@@ -288,6 +323,30 @@ async function seedProjects(technologyIdByName: Map<string, string>) {
         return { projectId: created.id, technologyId, order: techIndex }
       }),
     })
+
+    for (const [galleryIndex, item] of project.gallery.entries()) {
+      const media = await prisma.media.create({
+        data: {
+          url: item.src,
+          secureUrl: null,
+          provider: 'LOCAL',
+          type: 'IMAGE',
+          folder: 'seed/projects',
+          altText: item.altText || item.caption,
+        },
+      })
+
+      await prisma.mediaAttachment.create({
+        data: {
+          mediaId: media.id,
+          attachableType: 'Project',
+          attachableId: created.id,
+          role: 'gallery',
+          caption: item.caption,
+          order: galleryIndex,
+        },
+      })
+    }
   }
 }
 
@@ -350,7 +409,59 @@ async function main() {
   console.log('[seed] Seeding Contact Information + Social Links...')
   await seedContact()
 
+  console.log('[seed] Seeding Site Settings, AI config, and sample messages...')
+  await seedPlatformModules()
+
   console.log('[seed] Done.')
+}
+
+async function seedPlatformModules() {
+  await prisma.siteSettings.create({
+    data: {
+      siteTitle: SITE.title,
+      siteDescription: SITE.description,
+      keywords: SITE.keywords,
+      ogImage: '/images/profile.jpg',
+      favicon: '/icons/favicon.svg',
+      github: SITE.social.github,
+      linkedin: SITE.social.linkedin,
+      githubDisplay: SITE.social.githubDisplay,
+      linkedinDisplay: SITE.social.linkedinDisplay,
+      maintenanceMode: false,
+    },
+  })
+
+  await prisma.aiConfiguration.create({
+    data: {
+      provider: 'openai',
+      chatModel: CHAT_MODEL,
+      embeddingModel: EMBEDDING_MODEL,
+      temperature: 0.7,
+      maxTokens: 1024,
+      embeddingDimensions: EMBEDDING_DIMENSIONS,
+      systemPrompt: DEFAULT_AI_SYSTEM_PROMPT,
+      chatbotPrompt: DEFAULT_AI_CHATBOT_PROMPT,
+    },
+  })
+
+  await prisma.contactMessage.createMany({
+    data: [
+      {
+        name: 'Jordan Lee',
+        email: 'jordan.lee@example.com',
+        subject: 'Collaboration on an ML project',
+        body: 'Hi Akshay, I saw Lumora on your portfolio and would love to discuss a potential collaboration.',
+        status: 'UNREAD',
+      },
+      {
+        name: 'Recruiter at Example Corp',
+        email: 'talent@example.com',
+        subject: 'Internship opportunity',
+        body: 'We are hiring for a summer internship and your portfolio stood out.',
+        status: 'READ',
+      },
+    ],
+  })
 }
 
 main()

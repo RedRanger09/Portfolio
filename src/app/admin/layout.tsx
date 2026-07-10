@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
-import { assertAdminAccess } from '@/lib/auth-placeholder'
+import { assertAdminAccess } from '@/lib/auth'
 import { AppProviders } from '@/providers'
 import { AdminShell } from '@/features/admin/layout'
 import '../globals.css'
@@ -37,18 +37,10 @@ export const viewport: Viewport = {
  * `app/global-not-found.tsx` for the one thing that pattern costs you.
  *
  * ---
- * **Authentication boundary (documented, not implemented — see brief):**
- * `assertAdminAccess()` (`@/lib/auth-placeholder`) is called here as the
- * *route-level* gate for every `/admin/*` page — today a no-op, so every
- * admin route is reachable by anyone who knows the URL. This is in
- * addition to, not a replacement for, the *action-level* calls already
- * wired into every Server Action in Phase 5.4 (`create-project`,
- * `update-hero`, etc.) — defense in depth once both are real: a leaked or
- * misconfigured route still can't mutate data if the action's own check
- * also fails closed. When Clerk lands, this single call becomes a real
- * `redirect('/sign-in')` (or a `middleware.ts` check ahead of this layout
- * entirely, if session state needs to be read before any admin code
- * runs) — nothing else in `app/admin/**` changes.
+ * **Authentication boundary:** `assertAdminAccess('route')` verifies the
+ * Clerk session and `ADMIN_EMAIL` owner check on every `/admin/*` render.
+ * Unauthenticated users are redirected to `/sign-in`; non-owners to
+ * `/unauthorized`. Middleware only initializes Clerk — it does not gate routes.
  *
  * **RBAC boundary (not implemented — extension point only):** once
  * `assertAdminAccess()` is real, a role check (e.g. "editor" vs
@@ -59,7 +51,7 @@ export const viewport: Viewport = {
  * draft"). No role model exists yet, so there's nothing to branch on today.
  */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  await assertAdminAccess()
+  await assertAdminAccess('route')
 
   return (
     <html lang="en" className={inter.variable}>

@@ -5,8 +5,8 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background: '#09090B',
-        surface: '#18181B',
+        background: 'var(--color-background)',
+        surface: 'var(--color-surface)',
         primary: {
           DEFAULT: '#6366F1',
           hover: '#5558E3',
@@ -26,6 +26,11 @@ const config: Config = {
           amber: '#FBBF24',
           pink: '#F472B6',
         },
+      },
+      fontFamily: {
+        sans: ['var(--font-inter)', 'Inter', 'system-ui', 'sans-serif'],
+        serif: ['Georgia', 'Times New Roman', 'Times', 'serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'monospace'],
       },
       boxShadow: {
         glow: '0 25px 80px rgba(99, 102, 241, 0.22)',

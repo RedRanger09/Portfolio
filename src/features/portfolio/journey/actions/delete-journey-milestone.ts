@@ -1,6 +1,6 @@
 'use server'
 
-import { assertAdminAccess } from '@/lib/auth-placeholder'
+import { assertAdminAccess } from '@/lib/auth'
 import { recordAuditEvent } from '@/lib/audit-placeholder'
 import { MutationNotFoundError, type MutationResult, runMutation } from '@/lib/mutation-result'
 import { prisma } from '@/lib/prisma'
@@ -8,7 +8,6 @@ import { deleteJourneyMilestoneSchema } from '../schemas/journey-milestone.schem
 
 /** Deletes a `JourneyMilestone`. Single-table delete — no transaction needed. */
 export async function deleteJourneyMilestone(input: unknown): Promise<MutationResult<{ id: string }>> {
-  // TODO(auth, Phase 6): only an authenticated admin may reach this point.
   await assertAdminAccess()
 
   return runMutation(

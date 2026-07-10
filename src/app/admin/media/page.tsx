@@ -1,16 +1,12 @@
 import type { Metadata } from 'next'
-import { Image } from 'lucide-react'
-import { ModulePlaceholder } from '@/features/admin/shared'
+import { MediaLibraryList } from '@/features/admin/media'
+import { getMediaForAdmin } from '@/features/media/data'
+import { isCloudinaryConfigured } from '@/lib/cloudinary'
 
 export const metadata: Metadata = { title: 'Media' }
 
-export default function AdminMediaPage() {
-  return (
-    <ModulePlaceholder
-      title="Media"
-      description="Upload and manage images used across the portfolio — arrives with Cloudinary integration."
-      icon={Image}
-      previewColumns={['File', 'Type', 'Size', 'Uploaded']}
-    />
-  )
+export default async function AdminMediaPage() {
+  const [items, cloudinaryConfigured] = await Promise.all([getMediaForAdmin(), Promise.resolve(isCloudinaryConfigured())])
+
+  return <MediaLibraryList items={items} cloudinaryConfigured={cloudinaryConfigured} />
 }

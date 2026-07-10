@@ -25,7 +25,7 @@ export function ProjectDetailHero({ project }: ProjectDetailHeroProps) {
       className="grid gap-6 lg:grid-cols-[1.08fr_0.92fr]"
     >
       <ProjectDetailHeader project={project} />
-      {project.metrics.length > 0 && (
+      {project.showMetrics && project.metrics.length > 0 && (
         <div className="rounded-[1.75rem] border border-white/[0.08] bg-surface p-6 shadow-card sm:p-8">
           <ProjectMetrics metrics={project.metrics} />
         </div>

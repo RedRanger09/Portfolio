@@ -1,7 +1,7 @@
 'use server'
 
 import type { ContactInformation, SocialLink, SocialLinkIcon as PrismaSocialLinkIcon } from '@prisma/client'
-import { assertAdminAccess } from '@/lib/auth-placeholder'
+import { assertAdminAccess } from '@/lib/auth'
 import { recordAuditEvent } from '@/lib/audit-placeholder'
 import { type MutationResult, runMutation } from '@/lib/mutation-result'
 import { prisma } from '@/lib/prisma'
@@ -29,7 +29,6 @@ type ContactInformationWithLinks = ContactInformation & { socialLinks: SocialLin
  * single-table siblings that don't need one.
  */
 export async function updateContactInformation(input: unknown): Promise<MutationResult<ContactInformationWithLinks>> {
-  // TODO(auth, Phase 6): only an authenticated admin may reach this point.
   await assertAdminAccess()
 
   return runMutation(
