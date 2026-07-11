@@ -152,6 +152,7 @@ async function seedResume() {
       previewAlt: FALLBACK_RESUME_DATA.previewAlt,
       previewImageWidth: FALLBACK_RESUME_DATA.previewImageWidth,
       previewImageHeight: FALLBACK_RESUME_DATA.previewImageHeight,
+      isVisible: FALLBACK_RESUME_DATA.isVisible,
     },
   })
 }

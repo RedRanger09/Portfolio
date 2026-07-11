@@ -339,35 +339,45 @@ export async function getProjects(): Promise<Project[]> {
  * lookup per request instead of running it twice (`ARCHITECTURE.md §4`).
  */
 export const getProjectBySlug = cache(async (slug: string): Promise<Project | undefined> => {
-  return withDbFallback(
-    async () => {
-      const row = await prisma.project.findUnique({
-        where: { slug },
-        include: PROJECT_INCLUDE,
-      })
-      if (!row || !row.isVisible) return null
+  try {
+    const row = await prisma.project.findUnique({
+      where: { slug },
+      include: PROJECT_INCLUDE,
+    })
+    if (row?.isVisible) {
       const galleries = await loadGalleriesByProjectId([row.id])
       return mapProjectRow(row, galleries.get(row.id))
-    },
-    FALLBACK_PROJECTS.find((project) => project.slug === slug),
-    `project:${slug}`,
-  )
+    }
+
+    // Hidden / missing is intentional — only use seed content when the table is empty.
+    const seeded = await prisma.project.count()
+    if (seeded === 0) return FALLBACK_PROJECTS.find((project) => project.slug === slug)
+    return undefined
+  } catch (error) {
+    console.error(`[db:project:${slug}] Query failed — serving static fallback content.`, error)
+    return FALLBACK_PROJECTS.find((project) => project.slug === slug)
+  }
 })
 
 export async function getFeaturedProject(): Promise<Project | undefined> {
-  return withDbFallback(
-    async () => {
-      const row = await prisma.project.findFirst({
-        where: { featured: true, isVisible: true },
-        include: PROJECT_INCLUDE,
-      })
-      if (!row) return null
+  try {
+    const row = await prisma.project.findFirst({
+      where: { featured: true, isVisible: true },
+      include: PROJECT_INCLUDE,
+    })
+    if (row) {
       const galleries = await loadGalleriesByProjectId([row.id])
       return mapProjectRow(row, galleries.get(row.id))
-    },
-    FALLBACK_PROJECTS.find((project) => project.featured),
-    'featured-project',
-  )
+    }
+
+    // No featured visible project — do not resurrect seed featured content if CMS has rows.
+    const seeded = await prisma.project.count()
+    if (seeded === 0) return FALLBACK_PROJECTS.find((project) => project.featured)
+    return undefined
+  } catch (error) {
+    console.error('[db:featured-project] Query failed — serving static fallback content.', error)
+    return FALLBACK_PROJECTS.find((project) => project.featured)
+  }
 }
 
 /**

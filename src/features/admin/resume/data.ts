@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
+import type { ResumeData } from '@/features/portfolio/resume/types'
 
-export async function getResumeForAdmin() {
+export async function getResumeForAdmin(): Promise<ResumeData | null> {
   const row = await prisma.resume.findFirst()
   if (!row) return null
   return {
@@ -11,5 +12,6 @@ export async function getResumeForAdmin() {
     previewAlt: row.previewAlt,
     previewImageWidth: row.previewImageWidth,
     previewImageHeight: row.previewImageHeight,
+    isVisible: row.isVisible,
   }
 }

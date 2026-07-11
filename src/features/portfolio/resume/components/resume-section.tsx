@@ -5,7 +5,9 @@ import { ResumeActions } from './resume-actions'
 
 /** Resume — server component: fetches resume metadata (file path, preview image, copy). */
 export async function ResumeSection() {
+  // Homepage also gates via SiteSettings.showResume; this hides content even when the section slot remains.
   const resume = await getResumeData()
+  if (!resume) return null
 
   return (
     <section id="resume" className="relative scroll-mt-28 px-4 py-24 sm:px-6 lg:px-8 lg:py-32">

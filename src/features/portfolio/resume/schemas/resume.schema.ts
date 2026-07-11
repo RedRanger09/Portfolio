@@ -9,6 +9,7 @@ export const updateResumeSchema = z.object({
   previewAlt: z.string().min(1, 'Preview alt text is required.'),
   previewImageWidth: z.number().int().positive('Width must be a positive number.'),
   previewImageHeight: z.number().int().positive('Height must be a positive number.'),
+  isVisible: z.boolean().default(true),
 })
 
 export type UpdateResumeInput = z.infer<typeof updateResumeSchema>

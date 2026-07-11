@@ -7,4 +7,6 @@ export interface ResumeData {
   previewAlt: string
   previewImageWidth: number
   previewImageHeight: number
+  /** Soft-hide from the public Resume section without deleting CMS data. */
+  isVisible: boolean
 }

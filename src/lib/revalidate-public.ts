@@ -2,11 +2,14 @@ import { revalidatePath } from 'next/cache'
 
 /**
  * Invalidates cached public pages after CMS / media mutations.
- *
- * `revalidatePath('/', 'layout')` covers the public `(site)` tree (home,
- * projects, blog) so visitors see CMS updates without a redeploy.
+ * Paths are listed explicitly so homepage section gates and collection
+ * filters refresh immediately after visibility toggles.
  */
 export function revalidatePublicContent(): void {
   revalidatePath('/', 'layout')
+  revalidatePath('/')
+  revalidatePath('/blog')
+  revalidatePath('/blog/[slug]', 'page')
+  revalidatePath('/projects/[slug]', 'page')
   revalidatePath('/sitemap.xml')
 }

@@ -11,6 +11,9 @@ import { SiteShell } from '@/components/layout'
 import { SiteJsonLd } from '@/components/seo/site-json-ld'
 import '../globals.css'
 
+/** CMS-driven visibility must not be frozen into a static build snapshot. */
+export const dynamic = 'force-dynamic'
+
 /**
  * Public site's root layout — content and behavior are unchanged from
  * before the Admin Foundation phase; only the location moved.

@@ -177,6 +177,9 @@ model Resume {
   previewImageWidth  Int
   previewImageHeight Int
 
+  /// Soft-hide the Resume section content without deleting CMS data.
+  isVisible Boolean @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
