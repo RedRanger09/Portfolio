@@ -16,6 +16,7 @@ export const FALLBACK_HERO_DATA: HeroData = {
   description:
     "I'm a B.Tech Computer Science student who enjoys building AI projects in my free time. I learn best by shipping small, real things — from web apps to ML experiments — and improving them one iteration at a time.",
   profileImage: '/images/profile.jpg',
+  showInterestCards: true,
   interestCards: [
     {
       icon: 'GraduationCap',
@@ -76,6 +77,7 @@ export const getHeroData = cache(async (): Promise<HeroData> => {
         // safe; see `prisma/seed.ts` for the shape this is written with.
         interestCards: row.interestCards as unknown as InterestCard[],
         ctas: row.ctas as unknown as HeroCta[],
+        showInterestCards: row.showInterestCards,
       }
     },
     FALLBACK_HERO_DATA,

@@ -12,12 +12,8 @@ interface SiteShellProps {
 const MAIN_CONTENT_ID = 'main-content'
 
 /**
- * The persistent application chrome — cursor FX, skip link, nav, and footer —
- * wrapped around every route's page content.
- *
- * This is a Server Component: `Navbar` and `CursorGlow` open their own
- * `"use client"` boundaries internally, so the shell itself ships no extra JS.
- * Appearance lives here (public site only) so admin keeps a fixed dark UI.
+ * Public site chrome. Home + Appearance float at the viewport corners;
+ * the sticky navbar keeps section links centered between them.
  */
 export function SiteShell({ children }: SiteShellProps) {
   return (

@@ -139,7 +139,7 @@ export function MediaUploadField({
           <p className="text-xs text-amber-400/90">Cloudinary is not configured. Set CLOUDINARY_* variables to enable uploads. Existing image paths still preview when present.</p>
         )}
 
-        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/svg+xml" className="sr-only" onChange={handleFileSelected} />
+        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="sr-only" onChange={handleFileSelected} />
       </div>
     </AdminField>
   )

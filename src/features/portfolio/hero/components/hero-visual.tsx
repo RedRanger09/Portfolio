@@ -1,9 +1,8 @@
 'use client'
 
 import { motion, useReducedMotion } from 'framer-motion'
-import { useHeroCursorParallax } from '../hooks/use-hero-cursor-parallax'
 import { heroVisualReveal } from '../animations/variants'
-import { HeroTechOrbits } from './hero-tech-orbits'
+import { HeroEngineeringBackdrop } from './hero-engineering-backdrop'
 import { HeroProfileImage } from './hero-profile-image'
 
 interface HeroVisualProps {
@@ -11,25 +10,24 @@ interface HeroVisualProps {
 }
 
 /**
- * Right column: the profile photo plus its floating tech-orb backdrop.
- * Owns the mouse-tracked parallax — the orbs drift opposite the cursor as it
- * moves within this container.
+ * Right column: portrait centered in a field of AI/ML engineering diagrams.
+ * Diagrams stay behind the photo and never cover the face.
  */
 export function HeroVisual({ profileImage }: HeroVisualProps) {
   const shouldReduceMotion = useReducedMotion() ?? false
-  const { containerRef, mouseX, mouseY, onMouseMove, onMouseLeave } = useHeroCursorParallax(shouldReduceMotion)
 
   return (
     <motion.div
-      ref={containerRef}
-      onMouseMove={onMouseMove}
-      onMouseLeave={onMouseLeave}
       {...heroVisualReveal}
-      className="relative flex items-center justify-center"
-      style={{ minHeight: 340 }}
+      className="relative mx-auto flex aspect-[5/6] w-full max-w-[36rem] items-center justify-center sm:max-w-[40rem] lg:ml-auto lg:mr-0 lg:max-w-[42rem]"
     >
-      <HeroTechOrbits shouldReduceMotion={shouldReduceMotion} mouseX={mouseX} mouseY={mouseY} />
-      <HeroProfileImage src={profileImage} shouldReduceMotion={shouldReduceMotion} />
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <HeroEngineeringBackdrop />
+      </div>
+
+      <div className="relative z-10 flex items-center justify-center">
+        <HeroProfileImage src={profileImage} shouldReduceMotion={shouldReduceMotion} />
+      </div>
     </motion.div>
   )
 }

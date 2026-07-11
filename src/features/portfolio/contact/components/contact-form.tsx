@@ -6,7 +6,7 @@ import { createContactMessage } from '@/features/messages/actions'
 import { countWords, MAX_MESSAGE_WORDS } from '@/features/messages/lib/word-count'
 import { cn } from '@/shared/utils'
 
-const EMPTY_FORM = { name: '', email: '', message: '' }
+const EMPTY_FORM = { name: '', email: '', message: '', website: '' }
 
 /**
  * Minimal client contact form — submits via Server Action to `ContactMessage`.
@@ -18,12 +18,14 @@ export function ContactForm() {
   const emailId = `${formId}-email`
   const messageId = `${formId}-message`
   const statusId = `${formId}-status`
+  const websiteId = `${formId}-website`
 
   const [values, setValues] = useState(EMPTY_FORM)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [formError, setFormError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [isPending, startTransition] = useTransition()
+  const [formStartedAt] = useState(() => Date.now())
 
   const nameRef = useRef<HTMLInputElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
@@ -79,12 +81,19 @@ export function ContactForm() {
         name: values.name,
         email: values.email,
         message: values.message,
+        website: values.website,
+        formStartedAt,
       })
 
       if (!result.success && result.error.type === 'VALIDATION') {
         const next: Record<string, string> = {}
         for (const [key, messages] of Object.entries(result.error.fieldErrors)) {
+          if (key === 'website' || key === 'formStartedAt') continue
           if (messages[0]) next[key] = messages[0]
+        }
+        if (result.error.fieldErrors._root?.[0] && Object.keys(next).length === 0) {
+          setFormError(result.error.fieldErrors._root[0])
+          return
         }
         setFieldErrors(next)
         focusFirstError(next)
@@ -105,7 +114,7 @@ export function ContactForm() {
     <form
       onSubmit={handleSubmit}
       noValidate
-      className="mt-10 rounded-[1.75rem] border border-white/[0.08] bg-surface/70 p-6 shadow-card sm:p-8"
+      className="relative mt-10 rounded-[1.75rem] border border-white/[0.08] bg-surface/70 p-6 shadow-card sm:p-8"
       aria-labelledby={`${formId}-heading`}
     >
       <div className="text-center sm:text-left">
@@ -138,6 +147,20 @@ export function ContactForm() {
       </div>
 
       <div className="mt-6 grid gap-5 sm:grid-cols-2">
+        {/* Honeypot — hidden from assistive tech and sighted users */}
+        <div className="absolute -left-[9999px] top-auto h-px w-px overflow-hidden" aria-hidden="true">
+          <label htmlFor={websiteId}>Website</label>
+          <input
+            id={websiteId}
+            name="website"
+            type="text"
+            tabIndex={-1}
+            autoComplete="off"
+            value={values.website}
+            onChange={(event) => updateField('website', event.target.value)}
+          />
+        </div>
+
         <div className="space-y-1.5">
           <label htmlFor={nameId} className="block text-sm font-medium text-zinc-300">
             Name <span className="text-pink-400">*</span>

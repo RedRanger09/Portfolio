@@ -19,6 +19,9 @@ export interface AuthenticatedAdmin {
  * RBAC extension point: a future role model would compose *after* this
  * call, not inside it — authentication (who are you?) stays separate
  * from authorization (what may you do?).
+ *
+ * Middleware requires a signed-in Clerk session for `/admin`; this function
+ * still enforces the owner email check on every admin route and mutation.
  */
 export async function requireAuthenticatedSession(): Promise<AuthenticatedAdmin> {
   const { userId } = await auth()
@@ -43,7 +46,8 @@ export async function requireAuthenticatedSession(): Promise<AuthenticatedAdmin>
  *
  * RBAC extension point: replace or extend this function with role/permission
  * checks once a role model exists. `requireAuthenticatedSession()` stays
- * unchanged; middleware only initializes Clerk (no route gating).
+ * unchanged. Middleware only requires a signed-in session for `/admin`;
+ * this function enforces the owner email gate.
  */
 export function authorizeOwnerAccess(email: string): void {
   const ownerEmail = env.adminEmail

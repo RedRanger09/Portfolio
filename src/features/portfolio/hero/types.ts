@@ -33,4 +33,6 @@ export interface HeroData {
   profileImage: string
   interestCards: InterestCard[]
   ctas: HeroCta[]
+  /** When false, public hero hides the interest-card row. */
+  showInterestCards: boolean
 }

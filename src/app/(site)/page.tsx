@@ -10,6 +10,7 @@ import { EducationSection } from '@/features/portfolio/education'
 import { CertificationsSection } from '@/features/portfolio/certifications'
 import { ResumeSection } from '@/features/portfolio/resume'
 import { ContactSection } from '@/features/portfolio/contact'
+import { LatestWritingSection } from '@/features/portfolio/blog'
 
 /**
  * Every section component keyed by its `SectionId` — the single place that
@@ -35,6 +36,8 @@ export default function HomePage() {
         const Section = SECTION_COMPONENTS[id]
         return <Section key={id} />
       })}
+      {/* Blog preview is intentionally not a scroll-spy homepage section. */}
+      <LatestWritingSection />
     </>
   )
 }

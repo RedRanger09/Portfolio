@@ -81,11 +81,11 @@ export function MobileNavDrawer({ open, scrolled, shouldReduceMotion, items, act
         >
           <div className="mx-auto grid max-w-6xl grid-cols-2 gap-1.5 pt-3">
             {items.map((item) => {
-              const isActive = activeSection === item.id
-              const Icon = NAV_ICONS[item.id]
+              const isActive = Boolean(item.id) && activeSection === item.id
+              const Icon = item.id ? NAV_ICONS[item.id] : item.href === '/blog' ? NAV_ICONS.blog : undefined
               return (
                 <a
-                  key={item.id}
+                  key={item.href}
                   href={item.href}
                   onClick={onNavigate}
                   aria-current={isActive ? 'true' : undefined}

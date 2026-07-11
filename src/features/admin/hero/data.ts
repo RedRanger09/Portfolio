@@ -12,5 +12,6 @@ export async function getHeroForAdmin() {
     profileImage: row.profileImage,
     interestCards: row.interestCards as unknown as InterestCard[],
     ctas: row.ctas as unknown as HeroCta[],
+    showInterestCards: row.showInterestCards,
   }
 }

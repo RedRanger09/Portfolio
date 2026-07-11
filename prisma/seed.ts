@@ -122,6 +122,7 @@ async function seedHero() {
       profileImage: FALLBACK_HERO_DATA.profileImage,
       interestCards: toJson(FALLBACK_HERO_DATA.interestCards),
       ctas: toJson(FALLBACK_HERO_DATA.ctas),
+      showInterestCards: FALLBACK_HERO_DATA.showInterestCards,
     },
   })
 }

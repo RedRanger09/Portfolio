@@ -21,12 +21,12 @@ export function DesktopNav({ items, activeSection, shouldReduceMotion, pillPaddi
       style={{ padding: pillPadding }}
     >
       {items.map((item) => {
-        const isActive = activeSection === item.id
-        const Icon = NAV_ICONS[item.id]
+        const isActive = Boolean(item.id) && activeSection === item.id
+        const Icon = item.id ? NAV_ICONS[item.id] : item.href === '/blog' ? NAV_ICONS.blog : undefined
 
         return (
           <motion.a
-            key={item.id}
+            key={item.href}
             href={item.href}
             aria-current={isActive ? 'true' : undefined}
             initial={false}

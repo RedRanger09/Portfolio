@@ -27,5 +27,9 @@ export interface SectionTheme {
 export interface NavigationItem {
   label: string
   href: string
-  id: SectionId
+  /**
+   * Homepage section id for ScrollSpy. Omit for route-only links (e.g. `/blog`)
+   * that should not participate in section observation.
+   */
+  id?: SectionId
 }

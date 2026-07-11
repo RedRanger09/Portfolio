@@ -1,15 +1,16 @@
 import type { MetadataRoute } from 'next'
 import { env } from '@/config/env'
 import { getAllProjectSlugs } from '@/features/portfolio/projects'
+import { getAllPublishedBlogSlugs } from '@/features/portfolio/blog'
 
 /**
  * Public URL index for search engines.
- * Project slugs are resolved at request time with a static fallback when the
- * database is unavailable (same pattern as `generateStaticParams`).
+ * Project and blog slugs are resolved at request time with a static fallback
+ * when the database is unavailable (same pattern as `generateStaticParams`).
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = env.appUrl
-  const slugs = await getAllProjectSlugs()
+  const [projectSlugs, blogSlugs] = await Promise.all([getAllProjectSlugs(), getAllPublishedBlogSlugs()])
   const now = new Date()
 
   return [
@@ -19,11 +20,23 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 1,
     },
-    ...slugs.map((slug) => ({
+    {
+      url: `${baseUrl}/blog`,
+      lastModified: now,
+      changeFrequency: 'weekly',
+      priority: 0.85,
+    },
+    ...projectSlugs.map((slug) => ({
       url: `${baseUrl}/projects/${slug}`,
       lastModified: now,
       changeFrequency: 'monthly' as const,
       priority: 0.8,
+    })),
+    ...blogSlugs.map((slug) => ({
+      url: `${baseUrl}/blog/${slug}`,
+      lastModified: now,
+      changeFrequency: 'weekly' as const,
+      priority: 0.7,
     })),
   ]
 }

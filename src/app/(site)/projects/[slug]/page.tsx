@@ -55,5 +55,25 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
     notFound()
   }
 
-  return <ProjectDetail project={project} />
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CreativeWork',
+    name: project.name,
+    description: project.description,
+    url: `${SITE.siteUrl}/projects/${project.slug}`,
+    image: project.screenshot || undefined,
+    author: {
+      '@type': 'Person',
+      name: SITE.name,
+      url: SITE.siteUrl,
+    },
+    keywords: project.techStack?.join(', '),
+  }
+
+  return (
+    <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <ProjectDetail project={project} />
+    </>
+  )
 }

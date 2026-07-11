@@ -33,6 +33,7 @@ export async function updateHero(input: unknown): Promise<MutationResult<Hero>> 
         profileImage: data.profileImage,
         interestCards: toJson(data.interestCards),
         ctas: toJson(data.ctas),
+        showInterestCards: data.showInterestCards,
       }
 
       const hero = existing

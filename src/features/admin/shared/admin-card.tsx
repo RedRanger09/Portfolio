@@ -8,13 +8,12 @@ interface AdminCardProps {
   as?: 'div' | 'section'
   'aria-label'?: string
   /**
-   * Set `false` when a consumer (e.g. `AdminTableShell`) needs full
-   * control of its own internal spacing. A plain `className` override
-   * can't reliably win against the default padding here — this
-   * codebase's `cn()` (`@/shared/utils`) is a naive class-joiner, not
-   * `tailwind-merge`, so it doesn't dedupe conflicting utilities and
-   * Tailwind's own cascade order (not className order) would decide the
-   * winner. An explicit prop sidesteps that entirely.
+   * Set `false` when a consumer needs full control of its own internal
+   * spacing. A plain `className` override can't reliably win against the
+   * default padding here — this codebase's `cn()` (`@/shared/utils`) is a
+   * naive class-joiner, not `tailwind-merge`, so it doesn't dedupe
+   * conflicting utilities and Tailwind's own cascade order (not className
+   * order) would decide the winner. An explicit prop sidesteps that entirely.
    */
   padded?: boolean
 }
@@ -24,8 +23,8 @@ interface AdminCardProps {
  * the dashboard's equivalent of the public site's inlined
  * `rounded-2xl border border-white/[0.08] bg-surface/60` card pattern
  * (`ProjectCard`, `ContactMethodCard`), pulled into a real shared
- * component now that 3+ admin pieces (`StatCard`, `AdminTableShell`,
- * every module placeholder) need the identical surface.
+ * component now that multiple admin pieces (`StatCard`, editors, lists)
+ * need the identical surface.
  */
 export function AdminCard({ children, className, as = 'div', 'aria-label': ariaLabel, padded = true }: AdminCardProps) {
   const Tag = as

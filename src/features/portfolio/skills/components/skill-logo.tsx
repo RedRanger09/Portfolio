@@ -16,8 +16,8 @@ export function SkillLogo({ logo, name }: SkillLogoProps) {
       <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-white/[0.08] bg-background/60 transition group-hover:border-white/20">
         {/*
           eslint-disable-next-line @next/next/no-img-element --
-          Remote SVG from the Simple Icons CDN (see hero-tech-orbits.tsx for
-          the documented dangerouslyAllowSVG/CSP trade-off).
+          Remote SVG from the Simple Icons CDN. Local SVGs use next/image with
+          dangerouslyAllowSVG; remote brand SVGs stay on <img> to avoid that path.
         */}
         <img
           src={getSimpleIconUrl(logo)}

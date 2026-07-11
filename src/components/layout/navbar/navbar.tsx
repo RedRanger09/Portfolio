@@ -8,15 +8,13 @@ import { useActiveSection } from './use-active-section'
 import { DesktopNav } from './desktop-nav'
 import { MobileNavDrawer, MobileNavToggle } from './mobile-nav'
 
-/** Computed once — NAVIGATION_ITEMS is a static module-level constant. */
-const SECTION_IDS = NAVIGATION_ITEMS.map((item) => item.id)
+/** Computed once — only homepage section links participate in ScrollSpy. */
+const SECTION_IDS = NAVIGATION_ITEMS.map((item) => item.id).filter((id): id is NonNullable<typeof id> => Boolean(id))
 
 /**
  * Sticky, scroll-aware primary navigation.
- *
- * Scroll-driven visuals (padding, blur, background, shadow) are implemented
- * with Framer Motion's `useScroll`/`useTransform` so they update off the React
- * render cycle — no `window.addEventListener('scroll', ...)` re-renders.
+ * Home + Appearance float independently at the viewport corners;
+ * this bar keeps section pills centered with the mobile menu on the right.
  */
 export function Navbar() {
   const [open, setOpen] = useState(false)
@@ -29,8 +27,8 @@ export function Navbar() {
   const { scrollY } = useScroll()
   useMotionValueEvent(scrollY, 'change', (y) => setScrolled(y > 40))
 
-  const navPt = useTransform(scrollY, [0, 80], [14, shouldReduceMotion ? 14 : 9])
-  const navPb = useTransform(scrollY, [0, 80], [14, shouldReduceMotion ? 14 : 9])
+  const navPt = useTransform(scrollY, [0, 80], [12, shouldReduceMotion ? 12 : 8])
+  const navPb = useTransform(scrollY, [0, 80], [12, shouldReduceMotion ? 12 : 8])
   const pillPadding = useTransform(scrollY, [0, 80], [5, shouldReduceMotion ? 5 : 3])
   const headerBgDark = useTransform(scrollY, [0, 120], ['rgba(3,3,8,0)', 'rgba(3,3,8,0.86)'])
   const headerBgLight = useTransform(scrollY, [0, 120], ['rgba(244,244,245,0)', 'rgba(244,244,245,0.92)'])
@@ -61,15 +59,20 @@ export function Navbar() {
       }}
     >
       <motion.nav
-        className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8"
+        className="relative mx-auto flex max-w-6xl items-center justify-center px-4 sm:px-6 lg:px-8"
         style={{ paddingTop: navPt, paddingBottom: navPb }}
         aria-label="Primary"
       >
-        {/* Spacers reserve room for fixed Home (left) and Appearance (right) controls. */}
-        <div className="w-[5.75rem] shrink-0 sm:w-[6.5rem]" aria-hidden="true" />
+        {/* Corner spacers keep the pill optically centered between floating Home / Appearance. */}
+        <div className="pointer-events-none absolute inset-y-0 left-4 w-[5.75rem] sm:left-6 sm:w-[6.5rem] lg:left-8" aria-hidden="true" />
+        <div className="pointer-events-none absolute inset-y-0 right-4 w-[5.75rem] sm:right-6 sm:w-[8.5rem] lg:right-8" aria-hidden="true" />
+
         <DesktopNav items={NAVIGATION_ITEMS} activeSection={activeSection} shouldReduceMotion={shouldReduceMotion ?? false} pillPadding={pillPadding} />
-        <div className="flex shrink-0 items-center justify-end pr-[7.25rem] sm:pr-[9rem]">
-          <MobileNavToggle open={open} onToggle={() => setOpen((v) => !v)} shouldReduceMotion={shouldReduceMotion ?? false} />
+
+        <div className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center sm:right-6 lg:right-8">
+          <div className="mr-[4.5rem] sm:mr-[7.25rem]">
+            <MobileNavToggle open={open} onToggle={() => setOpen((v) => !v)} shouldReduceMotion={shouldReduceMotion ?? false} />
+          </div>
         </div>
       </motion.nav>
 

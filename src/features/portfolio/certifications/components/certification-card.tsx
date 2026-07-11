@@ -24,7 +24,7 @@ export function CertificationCard({ certification, index }: CertificationCardPro
         <p className="text-sm font-semibold text-white">{certification.name}</p>
         <div className="mt-1 flex items-center gap-1.5">
           {certification.providerLogo && (
-            // eslint-disable-next-line @next/next/no-img-element -- documented CDN SVG trade-off, see hero-tech-orbits.tsx
+            // eslint-disable-next-line @next/next/no-img-element -- remote Simple Icons CDN SVG
             <img
               src={getSimpleIconUrl(certification.providerLogo)}
               alt=""

@@ -2,6 +2,7 @@
 
 import { assertAdminAccess, requireAuthenticatedSession } from '@/lib/auth'
 import { mutationSuccess, type MutationResult } from '@/lib/mutation-result'
+import { revalidatePublicContent } from '@/lib/revalidate-public'
 import type { MediaAsset, MediaFolderKey } from '../types'
 import { uploadMediaMetadataSchema } from '../schemas/media.schema'
 import { readUploadFile, validateImageUpload } from '../lib/media-validation'
@@ -31,6 +32,7 @@ export async function uploadMedia(formData: FormData): Promise<MutationResult<Me
       uploadedByEmail: session.email,
     })
 
+    revalidatePublicContent()
     return mutationSuccess(media)
   } catch (error) {
     return handleMediaActionError(error, 'upload-media')

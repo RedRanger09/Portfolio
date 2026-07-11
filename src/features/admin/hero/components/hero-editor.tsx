@@ -54,7 +54,22 @@ export function HeroEditor({ initialValues, cloudinaryConfigured }: Props) {
         </div>
       </AdminCard>
       <AdminCard as="section" aria-label="Interest cards">
-        <div className="space-y-6">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-white">Interest cards</p>
+            <p className="mt-1 text-xs text-zinc-500">Shown under the hero CTAs on the public site. Turn off to hide them entirely.</p>
+          </div>
+          <label className="inline-flex items-center gap-2 text-sm text-zinc-300">
+            <input
+              type="checkbox"
+              checked={values.showInterestCards}
+              onChange={(event) => setValues((c) => ({ ...c, showInterestCards: event.target.checked }))}
+              className="h-4 w-4 rounded border-white/20 bg-background text-primary focus:ring-primary/60"
+            />
+            Show interest cards
+          </label>
+        </div>
+        <div className={cn('space-y-6', !values.showInterestCards && 'pointer-events-none opacity-50')}>
           {values.interestCards.map((card, index) => (
             <div key={index} className="rounded-lg border border-white/[0.08] p-4">
               <p className="mb-3 text-sm font-medium text-white">Card {index + 1}</p>

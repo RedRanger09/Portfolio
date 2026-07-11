@@ -25,7 +25,7 @@ export function HeroContent({ data }: HeroContentProps) {
       <HeroHeadline title={data.title} subtitle={data.subtitle} />
       <HeroDescription description={data.description} />
       <HeroCtaGroup ctas={data.ctas} />
-      <HeroInterestCards cards={data.interestCards} />
+      {data.showInterestCards && data.interestCards.length > 0 ? <HeroInterestCards cards={data.interestCards} /> : null}
     </motion.div>
   )
 }

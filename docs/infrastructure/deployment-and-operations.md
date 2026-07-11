@@ -32,13 +32,27 @@ GitHub Actions CI  (typecheck · lint · build   [+ tests, once they exist])
              │
              ▼
      Vercel Git integration builds Production
-        - `prisma migrate deploy` runs as a pre-deploy step
+        - Build Command: `npm run vercel-build`
+          (`prisma migrate deploy` then `next build`)
         - Production-scoped env vars injected
         - new deployment fully built & warmed BEFORE traffic switches
              │
              ▼
      Atomic cutover — old deployment kept, instantly promotable
 ```
+
+**Vercel project settings (required for first production release):**
+
+| Setting | Value |
+|---|---|
+| Framework Preset | Next.js |
+| Build Command | `npm run vercel-build` |
+| Install Command | `npm ci` (default) |
+| Node.js | 22.x |
+| Env vars | Copy from `.env.example` into Production (and Preview as needed) |
+
+Local / CI builds use `npm run build` (`prisma generate && next build`) so
+they do not require a live database URL for migrations.
 
 **Branch protection rule** (GitHub, `main`): require the CI check to pass
 before merge is allowed. This is what makes "merge to `main` = safe to

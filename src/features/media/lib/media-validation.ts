@@ -2,11 +2,15 @@ import imageSize from 'image-size'
 import { MutationValidationError } from '@/lib/mutation-result'
 import type { MediaType } from '@prisma/client'
 
+/**
+ * Raster images only — SVG uploads are rejected (XSS risk if served/inlined).
+ * Trusted repo SVGs used via `next/image` remain unaffected.
+ */
 export const IMAGE_UPLOAD_LIMITS = {
   maxBytes: 5 * 1024 * 1024,
   maxWidth: 4096,
   maxHeight: 4096,
-  allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'] as const,
+  allowedMimeTypes: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'] as const,
 } as const
 
 export const PDF_UPLOAD_LIMITS = {
@@ -28,11 +32,6 @@ function detectImageMime(buffer: Buffer): AllowedImageMime | null {
     if (signature.bytes.every((byte, index) => buffer[index] === byte)) {
       return signature.mime
     }
-  }
-
-  const asText = buffer.subarray(0, 256).toString('utf8').trim().toLowerCase()
-  if (asText.startsWith('<svg') || asText.includes('<svg')) {
-    return 'image/svg+xml'
   }
 
   return null
@@ -57,11 +56,18 @@ export function validateImageUpload(file: File, buffer: Buffer): ValidatedUpload
     throw new MutationValidationError({ file: ['Image must be 5 MB or smaller.'] })
   }
 
+  const asText = buffer.subarray(0, 256).toString('utf8').trim().toLowerCase()
+  if (asText.startsWith('<svg') || asText.includes('<svg')) {
+    throw new MutationValidationError({
+      file: ['SVG uploads are not allowed. Use JPEG, PNG, WebP, or GIF.'],
+    })
+  }
+
   const detectedMime = detectImageMime(buffer)
   const declaredMime = file.type as AllowedImageMime
 
   if (!detectedMime) {
-    throw new MutationValidationError({ file: ['Unsupported image format. Use JPEG, PNG, WebP, GIF, or SVG.'] })
+    throw new MutationValidationError({ file: ['Unsupported image format. Use JPEG, PNG, WebP, or GIF.'] })
   }
 
   if (declaredMime && declaredMime !== detectedMime) {
@@ -72,22 +78,14 @@ export function validateImageUpload(file: File, buffer: Buffer): ValidatedUpload
     throw new MutationValidationError({ file: ['Unsupported image format.'] })
   }
 
-  let width: number | null = null
-  let height: number | null = null
+  const dimensions = imageSize(buffer)
 
-  if (detectedMime !== 'image/svg+xml') {
-    const dimensions = imageSize(buffer)
+  if (!dimensions.width || !dimensions.height) {
+    throw new MutationValidationError({ file: ['Could not read image dimensions.'] })
+  }
 
-    if (!dimensions.width || !dimensions.height) {
-      throw new MutationValidationError({ file: ['Could not read image dimensions.'] })
-    }
-
-    if (dimensions.width > IMAGE_UPLOAD_LIMITS.maxWidth || dimensions.height > IMAGE_UPLOAD_LIMITS.maxHeight) {
-      throw new MutationValidationError({ file: ['Image dimensions must be 4096×4096 or smaller.'] })
-    }
-
-    width = dimensions.width
-    height = dimensions.height
+  if (dimensions.width > IMAGE_UPLOAD_LIMITS.maxWidth || dimensions.height > IMAGE_UPLOAD_LIMITS.maxHeight) {
+    throw new MutationValidationError({ file: ['Image dimensions must be 4096×4096 or smaller.'] })
   }
 
   return {
@@ -95,8 +93,8 @@ export function validateImageUpload(file: File, buffer: Buffer): ValidatedUpload
     mimeType: detectedMime,
     filename: file.name,
     mediaType: 'IMAGE',
-    width,
-    height,
+    width: dimensions.width,
+    height: dimensions.height,
   }
 }
 

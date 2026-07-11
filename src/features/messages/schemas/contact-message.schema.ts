@@ -26,6 +26,10 @@ export const createContactMessageSchema = z.object({
     .refine((value) => countWords(value) <= MAX_MESSAGE_WORDS, {
       message: `Message must be at most ${MAX_MESSAGE_WORDS} words.`,
     }),
+  /** Honeypot — must stay empty. Bots that fill hidden fields are rejected. */
+  website: z.string().max(200).optional().default(''),
+  /** Client timestamp when the form mounted — used for timing checks. */
+  formStartedAt: z.number().int().positive(),
 })
 
 export const updateContactMessageStatusSchema = z.object({

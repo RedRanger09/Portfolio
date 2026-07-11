@@ -33,9 +33,8 @@ export function ProjectTags({ techStack, limit, className = 'gap-2' }: ProjectTa
         >
           {/*
             eslint-disable-next-line @next/next/no-img-element --
-            Remote SVG from the Simple Icons CDN — same documented trade-off
-            as `hero/components/hero-tech-orbits.tsx`: next/image would need
-            `images.dangerouslyAllowSVG` + a CSP app-wide for an 11px badge icon.
+            Remote SVG from the Simple Icons CDN: next/image would need
+            `images.dangerouslyAllowSVG` app-wide for a tiny badge icon.
           */}
           <img
             src={getSimpleIconUrl(getTechLogoSlug(tech))}

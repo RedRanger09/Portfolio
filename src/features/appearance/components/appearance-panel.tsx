@@ -44,8 +44,8 @@ const LEADING_OPTIONS: { value: AppearanceLineHeight; label: string }[] = [
 ]
 
 /**
- * Fixed top-right Appearance control — theme + typography preferences for
- * public visitors. Preferences persist in localStorage.
+ * Appearance control for the sticky header — theme + typography preferences.
+ * Preferences persist in localStorage.
  */
 export function AppearancePanel() {
   const { preferences, setPreferences, resetPreferences } = useAppearance()
@@ -82,7 +82,7 @@ export function AppearancePanel() {
         aria-controls={panelId}
         aria-haspopup="dialog"
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex items-center gap-2 rounded-full border border-[var(--chrome-border)] bg-[var(--chrome-bg)] px-3 py-2 text-sm font-medium text-[var(--chrome-text)] shadow-[0_8px_24px_rgba(0,0,0,0.45)] backdrop-blur-xl transition hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 sm:px-3.5"
+        className="inline-flex h-9 items-center gap-2 rounded-full border border-[var(--chrome-border)] bg-[var(--chrome-bg)] px-3 text-sm font-medium text-[var(--chrome-text)] shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-xl transition hover:opacity-95 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/50 sm:px-3.5"
       >
         <Palette className="h-4 w-4 shrink-0" aria-hidden="true" />
         <span className="hidden sm:inline">Appearance</span>
@@ -94,7 +94,7 @@ export function AppearancePanel() {
           id={panelId}
           role="dialog"
           aria-label="Appearance settings"
-          className="absolute right-0 mt-2 w-[min(100vw-1.5rem,20rem)] rounded-2xl border border-[var(--chrome-border)] bg-[var(--chrome-bg)] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-xl"
+          className="absolute right-0 top-full z-[70] mt-2 w-[min(100vw-1.5rem,20rem)] rounded-2xl border border-[var(--chrome-border)] bg-[var(--chrome-bg)] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.45)] backdrop-blur-xl"
         >
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-medium text-[var(--chrome-text)]">Appearance</p>

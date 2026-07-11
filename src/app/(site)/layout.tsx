@@ -8,6 +8,7 @@ import { GoogleAnalytics, GoogleAnalyticsPageViews } from '@/features/analytics'
 import { APPEARANCE_FOUC_SCRIPT } from '@/features/appearance/fouc-script'
 import { AppProviders } from '@/providers'
 import { SiteShell } from '@/components/layout'
+import { SiteJsonLd } from '@/components/seo/site-json-ld'
 import '../globals.css'
 
 /**
@@ -40,6 +41,9 @@ export async function generateMetadata(): Promise<Metadata> {
     title: settings.siteTitle,
     description: settings.siteDescription,
     keywords: settings.keywords,
+    alternates: {
+      canonical: '/',
+    },
     openGraph: {
       title: settings.siteTitle,
       description: settings.siteDescription,
@@ -56,6 +60,10 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     icons: {
       icon: settings.favicon,
+    },
+    robots: {
+      index: true,
+      follow: true,
     },
   }
 }
@@ -78,6 +86,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_FOUC_SCRIPT }} />
       </head>
       <body className={inter.className} suppressHydrationWarning>
+        <SiteJsonLd />
         {measurementId ? <GoogleAnalytics measurementId={measurementId} /> : null}
         <AppProviders>
           <SiteShell>

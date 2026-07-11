@@ -35,6 +35,7 @@ export const updateHeroSchema = z.object({
   profileImage: z.string().min(1, 'Profile image is required.'),
   interestCards: z.array(interestCardSchema).min(1, 'At least one interest card is required.'),
   ctas: z.array(heroCtaSchema).min(1, 'At least one CTA is required.'),
+  showInterestCards: z.boolean().default(true),
 })
 
 export type UpdateHeroInput = z.infer<typeof updateHeroSchema>

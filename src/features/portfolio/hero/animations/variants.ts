@@ -41,14 +41,3 @@ export const profileHover = {
   whileHover: { scale: 1.04 } satisfies TargetAndTransition,
   transition: { duration: 0.35 } satisfies Transition,
 }
-
-/** Per-orb pulse/scale loop — collapses to a static, slightly-visible state under reduced motion. */
-export function techOrbPulse(delay: number, shouldReduceMotion: boolean) {
-  return {
-    initial: { opacity: 0, scale: 0.4 },
-    animate: shouldReduceMotion
-      ? ({ opacity: 0.85 } satisfies TargetAndTransition)
-      : ({ opacity: [0.55, 1, 0.55], scale: [1, 1.1, 1] } satisfies TargetAndTransition),
-    transition: { delay, duration: 3.5 + delay * 0.4, repeat: Infinity, ease: 'easeInOut' } satisfies Transition,
-  }
-}
