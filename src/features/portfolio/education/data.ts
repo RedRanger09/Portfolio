@@ -62,7 +62,7 @@ export const EDUCATION_TYPE_TO_DB: Record<EducationType, PrismaEducationType> = 
 export async function getEducation(): Promise<EducationEntry[]> {
   return withDbFallback(
     async () => {
-      const rows = await prisma.education.findMany({ orderBy: { order: 'asc' } })
+      const rows = await prisma.education.findMany({ where: { isVisible: true }, orderBy: { order: 'asc' } })
       return rows.map((row) => ({
         id: row.id,
         type: EDUCATION_TYPE_MAP[row.type],

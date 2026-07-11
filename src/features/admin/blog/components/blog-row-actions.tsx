@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ExternalLink, MoreHorizontal, Pencil, Trash2, Eye, EyeOff } from 'lucide-react'
 import { deleteBlogPost, updateBlogPost } from '@/features/blog/actions'
-import { AdminConfirmDialog } from '@/features/admin/shared'
+import { AdminConfirmDialog, VisibilityToggleButton } from '@/features/admin/shared'
 import { cn } from '@/shared/utils'
 import type { AdminBlogListItem } from '../types'
 
@@ -27,6 +27,20 @@ export function BlogRowActions({ post, onOptimisticUpdate }: BlogRowActionsProps
 
     startTransition(async () => {
       const result = await updateBlogPost({ id: post.id, status: nextStatus })
+      if (!result.success) {
+        onOptimisticUpdate(post.id, previous)
+        return
+      }
+      router.refresh()
+    })
+  }
+
+  function runToggleVisibility() {
+    const previous = { isVisible: post.isVisible }
+    onOptimisticUpdate(post.id, { isVisible: !post.isVisible })
+
+    startTransition(async () => {
+      const result = await updateBlogPost({ id: post.id, isVisible: !previous.isVisible })
       if (!result.success) {
         onOptimisticUpdate(post.id, previous)
         return
@@ -59,6 +73,12 @@ export function BlogRowActions({ post, onOptimisticUpdate }: BlogRowActionsProps
         {post.published ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
         <span className="sr-only">{post.published ? 'Unpublish' : 'Publish'}</span>
       </button>
+
+      <VisibilityToggleButton
+        isVisible={post.isVisible}
+        disabled={isPending}
+        onToggle={runToggleVisibility}
+      />
 
       <div className="relative">
         <button

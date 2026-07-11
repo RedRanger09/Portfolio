@@ -3,6 +3,7 @@ export interface AdminCertificationListItem {
   name: string
   provider: string
   completionDate: string
+  isVisible: boolean
   order: number
   updatedAt: string
   image: string

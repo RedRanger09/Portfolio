@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 import { env } from '@/config/env'
 import { getAllProjectSlugs } from '@/features/portfolio/projects'
 import { getAllPublishedBlogSlugs } from '@/features/portfolio/blog'
+import { getPublicVisibility } from '@/features/settings/visibility'
 
 /**
  * Public URL index for search engines.
@@ -10,7 +11,11 @@ import { getAllPublishedBlogSlugs } from '@/features/portfolio/blog'
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = env.appUrl
-  const [projectSlugs, blogSlugs] = await Promise.all([getAllProjectSlugs(), getAllPublishedBlogSlugs()])
+  const visibility = await getPublicVisibility()
+  const [projectSlugs, blogSlugs] = await Promise.all([
+    visibility.showProjects ? getAllProjectSlugs() : Promise.resolve([]),
+    visibility.showBlog ? getAllPublishedBlogSlugs() : Promise.resolve([]),
+  ])
   const now = new Date()
 
   return [
@@ -20,12 +25,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: 'monthly',
       priority: 1,
     },
-    {
-      url: `${baseUrl}/blog`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.85,
-    },
+    ...(visibility.showBlog
+      ? [
+          {
+            url: `${baseUrl}/blog`,
+            lastModified: now,
+            changeFrequency: 'weekly' as const,
+            priority: 0.85,
+          },
+        ]
+      : []),
     ...projectSlugs.map((slug) => ({
       url: `${baseUrl}/projects/${slug}`,
       lastModified: now,

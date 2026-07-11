@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Code2, MoreHorizontal, Pencil, Trash2, ExternalLink } from 'lucide-react'
-import { deleteSkillCategory } from '@/features/portfolio/skills/actions'
-import { AdminBadge, AdminCard, AdminConfirmDialog, AdminPagination, AdminSearchInput, ADMIN_PAGE_SIZE, EmptyState, SectionTitle } from '@/features/admin/shared'
+import { deleteSkillCategory, updateSkillCategory } from '@/features/portfolio/skills/actions'
+import { AdminBadge, AdminCard, AdminConfirmDialog, AdminPagination, AdminSearchInput, ADMIN_PAGE_SIZE, EmptyState, SectionTitle, VisibilityToggleButton } from '@/features/admin/shared'
 import type { AdminSkillCategoryListItem } from '../types'
 
 export function SkillsAdminList({ categories: initial }: { categories: AdminSkillCategoryListItem[] }) {
@@ -21,6 +21,19 @@ export function SkillsAdminList({ categories: initial }: { categories: AdminSkil
   const totalPages = Math.max(1, Math.ceil(visible.length / ADMIN_PAGE_SIZE))
   const paged = visible.slice((Math.min(page, totalPages) - 1) * ADMIN_PAGE_SIZE, Math.min(page, totalPages) * ADMIN_PAGE_SIZE)
 
+  function runToggleVisibility(item: AdminSkillCategoryListItem) {
+    const previous = { isVisible: item.isVisible }
+    setCategories((cur) => cur.map((c) => (c.id === item.id ? { ...c, isVisible: !item.isVisible } : c)))
+    startTransition(async () => {
+      const result = await updateSkillCategory({ id: item.id, isVisible: !previous.isVisible })
+      if (!result.success) {
+        setCategories((cur) => cur.map((c) => (c.id === item.id ? { ...c, ...previous } : c)))
+        return
+      }
+      router.refresh()
+    })
+  }
+
   return (
     <div className="space-y-6">
       <SectionTitle title="Skills" description="Manage skill categories and technologies." action={<Link href="/admin/skills/new" className="inline-flex min-h-10 items-center rounded-lg border border-primary/30 bg-gradient-cta px-4 text-sm text-white">New category</Link>} />
@@ -34,7 +47,7 @@ export function SkillsAdminList({ categories: initial }: { categories: AdminSkil
                   <td className="px-5 py-4"><Link href={`/admin/skills/${item.id}`} className="font-medium text-white hover:text-primary">{item.title}</Link></td>
                   <td className="px-5 py-4 text-zinc-400">{item.icon}</td>
                   <td className="px-5 py-4"><AdminBadge tone="info">{item.itemCount} items</AdminBadge></td>
-                  <td className="px-5 py-4 text-right"><button type="button" onClick={() => setMenuId(item.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08]"><MoreHorizontal className="h-4 w-4" /></button></td>
+                  <td className="px-5 py-4 text-right"><div className="inline-flex items-center justify-end gap-1"><VisibilityToggleButton isVisible={item.isVisible} disabled={isPending} onToggle={() => runToggleVisibility(item)} /><button type="button" onClick={() => setMenuId(item.id)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08]"><MoreHorizontal className="h-4 w-4" /></button></div></td>
                 </tr>
               ))}
             </tbody></table>

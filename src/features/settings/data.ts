@@ -2,8 +2,9 @@ import { SITE } from '@/config/site.config'
 import { prisma } from '@/lib/prisma'
 import { MutationValidationError } from '@/lib/mutation-result'
 import { resolveMediaUrlById } from '@/features/media/lib/media-service'
+import { DEFAULT_PUBLIC_VISIBILITY, type PublicVisibility } from './visibility-config'
 
-export interface PublicSiteSettings {
+export interface PublicSiteSettings extends PublicVisibility {
   siteTitle: string
   siteDescription: string
   keywords: string[]
@@ -30,6 +31,7 @@ function fallbackFromSiteConfig(): PublicSiteSettings {
     linkedinDisplay: SITE.social.linkedinDisplay,
     maintenanceMode: false,
     maintenanceMessage: null,
+    ...DEFAULT_PUBLIC_VISIBILITY,
   }
 }
 
@@ -42,7 +44,33 @@ export async function getSiteSettingsForAdmin() {
 
 export async function getSiteSettingsForPublic(): Promise<PublicSiteSettings> {
   const row = await prisma.siteSettings.findFirst()
-  return row ?? fallbackFromSiteConfig()
+  if (!row) return fallbackFromSiteConfig()
+
+  return {
+    siteTitle: row.siteTitle,
+    siteDescription: row.siteDescription,
+    keywords: row.keywords,
+    ogImage: row.ogImage,
+    favicon: row.favicon,
+    github: row.github,
+    linkedin: row.linkedin,
+    githubDisplay: row.githubDisplay,
+    linkedinDisplay: row.linkedinDisplay,
+    maintenanceMode: row.maintenanceMode,
+    maintenanceMessage: row.maintenanceMessage,
+    showHero: row.showHero,
+    showAbout: row.showAbout,
+    showJourney: row.showJourney,
+    showSkills: row.showSkills,
+    showProjects: row.showProjects,
+    showEducation: row.showEducation,
+    showCertificates: row.showCertificates,
+    showResume: row.showResume,
+    showBlog: row.showBlog,
+    showContact: row.showContact,
+    showContactForm: row.showContactForm,
+    showInterests: row.showInterests,
+  }
 }
 
 interface OgImageWriteInput {

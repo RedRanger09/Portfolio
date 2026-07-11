@@ -40,6 +40,7 @@ export async function updateBlogPost(input: unknown): Promise<MutationResult<Blo
         ...(data.excerpt !== undefined ? { excerpt: data.excerpt } : {}),
         ...(data.content !== undefined ? { content: data.content } : {}),
         ...(data.status !== undefined ? { status: data.status } : {}),
+        ...(data.isVisible !== undefined ? { isVisible: data.isVisible } : {}),
         ...(data.tags !== undefined ? { tags: data.tags } : {}),
         ...(imageWrite.featuredImage !== undefined ? { featuredImage: imageWrite.featuredImage } : {}),
         ...(imageWrite.featuredImageMediaId !== undefined ? { featuredImageMediaId: imageWrite.featuredImageMediaId } : {}),

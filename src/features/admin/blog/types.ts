@@ -9,6 +9,7 @@ export interface AdminBlogListItem {
   title: string
   status: BlogPostStatus
   published: boolean
+  isVisible: boolean
   tags: string[]
   featuredImage: string
   publishedAt: string | null

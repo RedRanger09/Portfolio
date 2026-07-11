@@ -23,6 +23,7 @@ const ADMIN_JOURNEY_LIST_SELECT = {
   label: true,
   year: true,
   isCurrent: true,
+  isVisible: true,
   order: true,
   updatedAt: true,
 } as const
@@ -40,6 +41,7 @@ export async function getJourneyMilestonesForAdmin(): Promise<AdminJourneyListIt
     icon: JOURNEY_ICON_MAP[row.icon],
     accent: mapAccentColor(row.accent),
     isCurrent: row.isCurrent,
+    isVisible: row.isVisible ?? true,
     order: row.order,
     updatedAt: row.updatedAt.toISOString(),
   }))

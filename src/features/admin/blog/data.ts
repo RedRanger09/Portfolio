@@ -6,6 +6,7 @@ const BLOG_LIST_SELECT = {
   slug: true,
   title: true,
   status: true,
+  isVisible: true,
   tags: true,
   featuredImage: true,
   publishedAt: true,
@@ -17,6 +18,7 @@ function mapListItem(row: {
   slug: string
   title: string
   status: 'DRAFT' | 'PUBLISHED'
+  isVisible?: boolean | null
   tags: string[]
   featuredImage: string
   publishedAt: Date | null
@@ -28,6 +30,7 @@ function mapListItem(row: {
     title: row.title,
     status: row.status,
     published: row.status === 'PUBLISHED',
+    isVisible: row.isVisible ?? true,
     tags: row.tags,
     featuredImage: row.featuredImage,
     publishedAt: row.publishedAt?.toISOString() ?? null,

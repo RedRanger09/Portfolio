@@ -107,6 +107,7 @@ export const updateProjectSchema = z.object({
   slug: slugSchema.optional(),
   featured: z.boolean().optional(),
   isPlaceholder: z.boolean().optional(),
+  isVisible: z.boolean().optional(),
   name: z.string().min(1, 'Name is required.').max(120).optional(),
   category: z.string().min(1, 'Category is required.').max(80).optional(),
   heroEyebrow: z.string().max(80).optional(),

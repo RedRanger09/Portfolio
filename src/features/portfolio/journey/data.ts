@@ -154,7 +154,7 @@ export const JOURNEY_ICON_TO_DB: Record<JourneyIcon, PrismaJourneyIcon> = {
 export async function getLearningJourney(): Promise<JourneyStep[]> {
   return withDbFallback(
     async () => {
-      const rows = await prisma.journeyMilestone.findMany({ orderBy: { order: 'asc' } })
+      const rows = await prisma.journeyMilestone.findMany({ where: { isVisible: true }, orderBy: { order: 'asc' } })
       return rows.map((row) => ({
         id: row.id,
         label: row.label,

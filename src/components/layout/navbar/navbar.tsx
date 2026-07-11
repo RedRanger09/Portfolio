@@ -1,26 +1,32 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { motion, useMotionValueEvent, useReducedMotion, useScroll, useTransform } from 'framer-motion'
-import { NAVIGATION_ITEMS } from '@/constants/navigation'
+import type { NavigationItem } from '@/shared/types'
 import { useAppearance } from '@/features/appearance'
 import { useActiveSection } from './use-active-section'
 import { DesktopNav } from './desktop-nav'
 import { MobileNavDrawer, MobileNavToggle } from './mobile-nav'
 
-/** Computed once — only homepage section links participate in ScrollSpy. */
-const SECTION_IDS = NAVIGATION_ITEMS.map((item) => item.id).filter((id): id is NonNullable<typeof id> => Boolean(id))
+interface NavbarProps {
+  /** Visibility-filtered nav items from SiteSettings (server). */
+  items: NavigationItem[]
+}
 
 /**
  * Sticky, scroll-aware primary navigation.
  * Home + Appearance float independently at the viewport corners;
  * this bar keeps section pills centered with the mobile menu on the right.
  */
-export function Navbar() {
+export function Navbar({ items }: NavbarProps) {
   const [open, setOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const shouldReduceMotion = useReducedMotion()
-  const activeSection = useActiveSection(SECTION_IDS)
+  const sectionIds = useMemo(
+    () => items.map((item) => item.id).filter((id): id is NonNullable<typeof id> => Boolean(id)),
+    [items],
+  )
+  const activeSection = useActiveSection(sectionIds)
   const { resolvedTheme } = useAppearance()
   const isLight = resolvedTheme === 'light'
 
@@ -63,11 +69,10 @@ export function Navbar() {
         style={{ paddingTop: navPt, paddingBottom: navPb }}
         aria-label="Primary"
       >
-        {/* Corner spacers keep the pill optically centered between floating Home / Appearance. */}
         <div className="pointer-events-none absolute inset-y-0 left-4 w-[5.75rem] sm:left-6 sm:w-[6.5rem] lg:left-8" aria-hidden="true" />
         <div className="pointer-events-none absolute inset-y-0 right-4 w-[5.75rem] sm:right-6 sm:w-[8.5rem] lg:right-8" aria-hidden="true" />
 
-        <DesktopNav items={NAVIGATION_ITEMS} activeSection={activeSection} shouldReduceMotion={shouldReduceMotion ?? false} pillPadding={pillPadding} />
+        <DesktopNav items={items} activeSection={activeSection} shouldReduceMotion={shouldReduceMotion ?? false} pillPadding={pillPadding} />
 
         <div className="absolute right-4 top-1/2 flex -translate-y-1/2 items-center sm:right-6 lg:right-8">
           <div className="mr-[4.5rem] sm:mr-[7.25rem]">
@@ -80,7 +85,7 @@ export function Navbar() {
         open={open}
         scrolled={scrolled}
         shouldReduceMotion={shouldReduceMotion ?? false}
-        items={NAVIGATION_ITEMS}
+        items={items}
         activeSection={activeSection}
         onNavigate={() => setOpen(false)}
       />

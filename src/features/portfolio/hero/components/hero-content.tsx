@@ -11,6 +11,8 @@ import type { HeroData } from '../types'
 
 interface HeroContentProps {
   data: HeroData
+  /** SiteSettings.showInterests — gates interest cards on the public site. */
+  showInterests?: boolean
 }
 
 /**
@@ -18,14 +20,16 @@ interface HeroContentProps {
  * legacy design, which never staggered the badge/headline/description/CTA
  * individually) — only the interest cards below get their own stagger.
  */
-export function HeroContent({ data }: HeroContentProps) {
+export function HeroContent({ data, showInterests = true }: HeroContentProps) {
   return (
     <motion.div {...heroContentReveal}>
       <HeroBadge eyebrow={data.eyebrow} />
       <HeroHeadline title={data.title} subtitle={data.subtitle} />
       <HeroDescription description={data.description} />
       <HeroCtaGroup ctas={data.ctas} />
-      {data.showInterestCards && data.interestCards.length > 0 ? <HeroInterestCards cards={data.interestCards} /> : null}
+      {showInterests && data.showInterestCards && data.interestCards.length > 0 ? (
+        <HeroInterestCards cards={data.interestCards} />
+      ) : null}
     </motion.div>
   )
 }

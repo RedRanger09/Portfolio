@@ -10,6 +10,7 @@ export { collectBlogCategories } from './lib/categories'
 const PUBLISHED_WHERE: Prisma.BlogPostWhereInput = {
   status: 'PUBLISHED',
   publishedAt: { not: null },
+  isVisible: true,
 }
 
 const SUMMARY_SELECT = {

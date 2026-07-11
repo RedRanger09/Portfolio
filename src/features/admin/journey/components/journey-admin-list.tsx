@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { MoreHorizontal, Pencil, Trash2, ExternalLink, Route } from 'lucide-react'
-import { deleteJourneyMilestone } from '@/features/portfolio/journey/actions'
+import { deleteJourneyMilestone, updateJourneyMilestone } from '@/features/portfolio/journey/actions'
 import {
   AdminBadge,
   AdminCard,
@@ -14,6 +14,7 @@ import {
   ADMIN_PAGE_SIZE,
   EmptyState,
   SectionTitle,
+  VisibilityToggleButton,
 } from '@/features/admin/shared'
 import type { AdminJourneyListItem } from '../types'
 
@@ -21,11 +22,33 @@ interface JourneyAdminListProps {
   milestones: AdminJourneyListItem[]
 }
 
-function JourneyRowActions({ item, onDeleted }: { item: AdminJourneyListItem; onDeleted: (id: string) => void }) {
+function JourneyRowActions({
+  item,
+  onDeleted,
+  onOptimisticUpdate,
+}: {
+  item: AdminJourneyListItem
+  onDeleted: (id: string) => void
+  onOptimisticUpdate: (id: string, patch: Partial<AdminJourneyListItem>) => void
+}) {
   const router = useRouter()
   const [menuOpen, setMenuOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  function runToggleVisibility() {
+    const previous = { isVisible: item.isVisible }
+    onOptimisticUpdate(item.id, { isVisible: !item.isVisible })
+
+    startTransition(async () => {
+      const result = await updateJourneyMilestone({ id: item.id, isVisible: !previous.isVisible })
+      if (!result.success) {
+        onOptimisticUpdate(item.id, previous)
+        return
+      }
+      router.refresh()
+    })
+  }
 
   function handleDelete() {
     startTransition(async () => {
@@ -38,7 +61,12 @@ function JourneyRowActions({ item, onDeleted }: { item: AdminJourneyListItem; on
   }
 
   return (
-    <div className="relative flex justify-end">
+    <div className="relative flex items-center justify-end gap-1">
+      <VisibilityToggleButton
+        isVisible={item.isVisible}
+        disabled={isPending}
+        onToggle={runToggleVisibility}
+      />
       <button
         type="button"
         aria-expanded={menuOpen}
@@ -121,7 +149,13 @@ export function JourneyAdminList({ milestones: initialMilestones }: JourneyAdmin
                       <td className="px-5 py-4 text-zinc-400">{item.year}</td>
                       <td className="px-5 py-4">{item.isCurrent ? <AdminBadge tone="info">Current</AdminBadge> : <AdminBadge tone="neutral">Past</AdminBadge>}</td>
                       <td className="px-5 py-4 text-zinc-400">{item.order}</td>
-                      <td className="px-5 py-4"><JourneyRowActions item={item} onDeleted={(id) => setMilestones((c) => c.filter((m) => m.id !== id))} /></td>
+                      <td className="px-5 py-4">
+                        <JourneyRowActions
+                          item={item}
+                          onDeleted={(id) => setMilestones((c) => c.filter((m) => m.id !== id))}
+                          onOptimisticUpdate={(id, patch) => setMilestones((c) => c.map((m) => (m.id === id ? { ...m, ...patch } : m)))}
+                        />
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -23,6 +23,7 @@ export const updateSkillCategorySchema = z.object({
   accent: accentColorSchema.optional(),
   note: z.string().min(1, 'Note is required.').optional(),
   items: z.array(z.string().min(1)).optional(),
+  isVisible: z.boolean().optional(),
   order: z.number().int().min(0).optional(),
 })
 

@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Copy, ExternalLink, MoreHorizontal, Pencil, Star, Trash2, Eye, EyeOff } from 'lucide-react'
 import { deleteProject, duplicateProject, updateProject } from '@/features/portfolio/projects/actions'
-import { AdminConfirmDialog } from '@/features/admin/shared'
+import { AdminConfirmDialog, VisibilityToggleButton } from '@/features/admin/shared'
 import { cn } from '@/shared/utils'
 import type { AdminProjectListItem } from '../types'
 
@@ -21,22 +21,31 @@ export function ProjectRowActions({ project, onOptimisticUpdate }: ProjectRowAct
   const [actionError, setActionError] = useState<string | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  function runToggle(field: 'featured' | 'published') {
+  function runToggle(field: 'featured' | 'published' | 'isVisible') {
     setActionError(null)
-    const previous = { featured: project.featured, published: project.published, isPlaceholder: project.isPlaceholder }
+    const previous = {
+      featured: project.featured,
+      published: project.published,
+      isPlaceholder: project.isPlaceholder,
+      isVisible: project.isVisible,
+    }
 
     if (field === 'featured') {
       onOptimisticUpdate(project.id, { featured: !project.featured })
-    } else {
+    } else if (field === 'published') {
       const nextPublished = !project.published
       onOptimisticUpdate(project.id, { published: nextPublished, isPlaceholder: !nextPublished })
+    } else {
+      onOptimisticUpdate(project.id, { isVisible: !project.isVisible })
     }
 
     startTransition(async () => {
       const result =
         field === 'featured'
           ? await updateProject({ id: project.id, featured: !previous.featured })
-          : await updateProject({ id: project.id, isPlaceholder: !previous.published })
+          : field === 'published'
+            ? await updateProject({ id: project.id, isPlaceholder: !previous.published })
+            : await updateProject({ id: project.id, isVisible: !previous.isVisible })
 
       if (!result.success) {
         onOptimisticUpdate(project.id, previous)
@@ -114,6 +123,12 @@ export function ProjectRowActions({ project, onOptimisticUpdate }: ProjectRowAct
         {project.published ? <Eye className="h-3.5 w-3.5" aria-hidden="true" /> : <EyeOff className="h-3.5 w-3.5" aria-hidden="true" />}
         <span className="sr-only">{project.published ? 'Unpublish' : 'Publish'}</span>
       </button>
+
+      <VisibilityToggleButton
+        isVisible={project.isVisible}
+        disabled={isPending}
+        onToggle={() => runToggle('isVisible')}
+      />
 
       <div className="relative">
         <button

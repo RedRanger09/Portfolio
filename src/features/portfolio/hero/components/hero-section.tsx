@@ -1,4 +1,5 @@
 import { SectionBackdrop } from '@/shared/components'
+import { getPublicVisibility } from '@/features/settings/visibility'
 import { getHeroData } from '../data'
 import { HeroContent } from './hero-content'
 import { HeroVisual } from './hero-visual'
@@ -9,7 +10,7 @@ import { HeroVisual } from './hero-visual'
  * client components only because they use Framer Motion / cursor tracking.
  */
 export async function HeroSection() {
-  const heroData = await getHeroData()
+  const [heroData, visibility] = await Promise.all([getHeroData(), getPublicVisibility()])
 
   return (
     <section
@@ -19,7 +20,7 @@ export async function HeroSection() {
     >
       <SectionBackdrop theme="hero" />
       <div className="mx-auto grid max-w-6xl gap-14 lg:grid-cols-2 lg:items-center lg:gap-20">
-        <HeroContent data={heroData} />
+        <HeroContent data={heroData} showInterests={visibility.showInterests} />
         <HeroVisual profileImage={heroData.profileImage} />
       </div>
     </section>

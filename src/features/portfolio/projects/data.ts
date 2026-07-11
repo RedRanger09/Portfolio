@@ -321,6 +321,7 @@ export async function getProjects(): Promise<Project[]> {
   return withDbFallback(
     async () => {
       const rows = await prisma.project.findMany({
+        where: { isVisible: true },
         include: PROJECT_INCLUDE,
         orderBy: { order: 'asc' },
       })
@@ -344,7 +345,7 @@ export const getProjectBySlug = cache(async (slug: string): Promise<Project | un
         where: { slug },
         include: PROJECT_INCLUDE,
       })
-      if (!row) return null
+      if (!row || !row.isVisible) return null
       const galleries = await loadGalleriesByProjectId([row.id])
       return mapProjectRow(row, galleries.get(row.id))
     },
@@ -357,7 +358,7 @@ export async function getFeaturedProject(): Promise<Project | undefined> {
   return withDbFallback(
     async () => {
       const row = await prisma.project.findFirst({
-        where: { featured: true },
+        where: { featured: true, isVisible: true },
         include: PROJECT_INCLUDE,
       })
       if (!row) return null
@@ -381,7 +382,7 @@ export async function getAllProjectSlugs(): Promise<string[]> {
   return withDbFallback(
     async () => {
       const rows = await prisma.project.findMany({
-        where: { isPlaceholder: false },
+        where: { isPlaceholder: false, isVisible: true },
         select: { slug: true },
         orderBy: { order: 'asc' },
       })

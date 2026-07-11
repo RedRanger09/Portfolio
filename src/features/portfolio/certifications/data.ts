@@ -69,7 +69,7 @@ export const FALLBACK_CERTIFICATIONS: Certification[] = [
 export async function getCertifications(): Promise<Certification[]> {
   return withDbFallback(
     async () => {
-      const rows = await prisma.certification.findMany({ orderBy: { order: 'asc' } })
+      const rows = await prisma.certification.findMany({ where: { isVisible: true }, orderBy: { order: 'asc' } })
       return rows.map((row) => ({
         name: row.name,
         provider: row.provider,

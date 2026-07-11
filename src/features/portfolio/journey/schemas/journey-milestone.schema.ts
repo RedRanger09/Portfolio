@@ -39,6 +39,7 @@ export const updateJourneyMilestoneSchema = z.object({
   accent: accentColorSchema.optional(),
   isCurrent: z.boolean().optional(),
   subItems: z.array(z.string().min(1)).optional(),
+  isVisible: z.boolean().optional(),
   order: z.number().int().min(0).optional(),
 })
 

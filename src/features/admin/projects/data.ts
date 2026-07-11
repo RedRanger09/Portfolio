@@ -10,6 +10,7 @@ const ADMIN_PROJECT_LIST_SELECT = {
   category: true,
   featured: true,
   isPlaceholder: true,
+  isVisible: true,
   order: true,
   updatedAt: true,
   screenshot: true,
@@ -22,6 +23,7 @@ function mapAdminListItem(row: {
   category: string
   featured: boolean
   isPlaceholder: boolean
+  isVisible: boolean
   order: number
   updatedAt: Date
   screenshot: string
@@ -34,6 +36,7 @@ function mapAdminListItem(row: {
     featured: row.featured,
     isPlaceholder: row.isPlaceholder,
     published: !row.isPlaceholder,
+    isVisible: row.isVisible,
     order: row.order,
     updatedAt: row.updatedAt.toISOString(),
     screenshot: row.screenshot,

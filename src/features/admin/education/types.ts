@@ -6,6 +6,7 @@ export interface AdminEducationListItem {
   type: EducationType
   period: string
   degree: string
+  isVisible: boolean
   order: number
   updatedAt: string
 }

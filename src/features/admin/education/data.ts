@@ -4,7 +4,7 @@ import type { AdminEducationListItem } from './types'
 
 const TYPE_MAP = { SCHOOL: 'school', COLLEGE: 'college' } as const satisfies Record<string, EducationType>
 
-const SELECT = { id: true, institution: true, type: true, period: true, degree: true, order: true, updatedAt: true } as const
+const SELECT = { id: true, institution: true, type: true, period: true, degree: true, isVisible: true, order: true, updatedAt: true } as const
 
 export async function getEducationForAdmin(): Promise<AdminEducationListItem[]> {
   const rows = await prisma.education.findMany({ select: SELECT, orderBy: { order: 'asc' } })
@@ -14,6 +14,7 @@ export async function getEducationForAdmin(): Promise<AdminEducationListItem[]> 
     type: TYPE_MAP[row.type],
     period: row.period,
     degree: row.degree,
+    isVisible: row.isVisible ?? true,
     order: row.order,
     updatedAt: row.updatedAt.toISOString(),
   }))

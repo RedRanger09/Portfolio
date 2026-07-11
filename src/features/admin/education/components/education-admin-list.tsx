@@ -4,17 +4,40 @@ import { useEffect, useMemo, useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { GraduationCap, MoreHorizontal, Pencil, Trash2, ExternalLink } from 'lucide-react'
-import { deleteEducation } from '@/features/portfolio/education/actions'
-import { AdminBadge, AdminCard, AdminConfirmDialog, AdminPagination, AdminSearchInput, ADMIN_PAGE_SIZE, EmptyState, SectionTitle } from '@/features/admin/shared'
+import { deleteEducation, updateEducation } from '@/features/portfolio/education/actions'
+import { AdminBadge, AdminCard, AdminConfirmDialog, AdminPagination, AdminSearchInput, ADMIN_PAGE_SIZE, EmptyState, SectionTitle, VisibilityToggleButton } from '@/features/admin/shared'
 import type { AdminEducationListItem } from '../types'
 
-function RowActions({ item, onDeleted }: { item: AdminEducationListItem; onDeleted: (id: string) => void }) {
+function RowActions({
+  item,
+  onDeleted,
+  onOptimisticUpdate,
+}: {
+  item: AdminEducationListItem
+  onDeleted: (id: string) => void
+  onOptimisticUpdate: (id: string, patch: Partial<AdminEducationListItem>) => void
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
+
+  function runToggleVisibility() {
+    const previous = { isVisible: item.isVisible }
+    onOptimisticUpdate(item.id, { isVisible: !item.isVisible })
+    startTransition(async () => {
+      const result = await updateEducation({ id: item.id, isVisible: !previous.isVisible })
+      if (!result.success) {
+        onOptimisticUpdate(item.id, previous)
+        return
+      }
+      router.refresh()
+    })
+  }
+
   return (
-    <div className="relative flex justify-end">
+    <div className="relative flex items-center justify-end gap-1">
+      <VisibilityToggleButton isVisible={item.isVisible} disabled={isPending} onToggle={runToggleVisibility} />
       <button type="button" onClick={() => setOpen(!open)} className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-white/[0.08] text-zinc-500"><MoreHorizontal className="h-4 w-4" /></button>
       {open && (
         <>
@@ -48,7 +71,7 @@ export function EducationAdminList({ entries: initial }: { entries: AdminEducati
           <AdminCard padded={false}>
             <table className="w-full min-w-[40rem] text-sm"><thead><tr className="border-b border-white/[0.08]"><th className="px-5 py-3 text-left text-xs uppercase text-zinc-500">Institution</th><th className="px-5 py-3 text-left text-xs uppercase text-zinc-500">Type</th><th className="px-5 py-3 text-left text-xs uppercase text-zinc-500">Period</th><th className="px-5 py-3 text-right text-xs uppercase text-zinc-500">Actions</th></tr></thead><tbody>
               {paged.map((item) => (
-                <tr key={item.id} className="border-b border-white/[0.06]"><td className="px-5 py-4"><Link href={`/admin/education/${item.id}`} className="font-medium text-white hover:text-primary">{item.institution}</Link><p className="text-xs text-zinc-500">{item.degree}</p></td><td className="px-5 py-4"><AdminBadge>{item.type}</AdminBadge></td><td className="px-5 py-4 text-zinc-400">{item.period}</td><td className="px-5 py-4"><RowActions item={item} onDeleted={(id) => setEntries((c) => c.filter((e) => e.id !== id))} /></td></tr>
+                <tr key={item.id} className="border-b border-white/[0.06]"><td className="px-5 py-4"><Link href={`/admin/education/${item.id}`} className="font-medium text-white hover:text-primary">{item.institution}</Link><p className="text-xs text-zinc-500">{item.degree}</p></td><td className="px-5 py-4"><AdminBadge>{item.type}</AdminBadge></td><td className="px-5 py-4 text-zinc-400">{item.period}</td><td className="px-5 py-4"><RowActions item={item} onDeleted={(id) => setEntries((c) => c.filter((e) => e.id !== id))} onOptimisticUpdate={(id, patch) => setEntries((c) => c.map((e) => (e.id === id ? { ...e, ...patch } : e)))} /></td></tr>
               ))}
             </tbody></table>
             <div className="border-t border-white/[0.08] px-5 py-4"><AdminPagination page={Math.min(page, totalPages)} totalPages={totalPages} totalItems={visible.length} onPageChange={setPage} /></div>

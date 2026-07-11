@@ -7,6 +7,7 @@ export interface AdminSkillCategoryListItem {
   icon: SkillGroupIcon
   accent: AccentColor
   itemCount: number
+  isVisible: boolean
   order: number
   updatedAt: string
 }

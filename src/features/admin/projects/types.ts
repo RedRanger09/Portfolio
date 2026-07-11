@@ -15,6 +15,7 @@ export interface AdminProjectListItem {
   isPlaceholder: boolean
   /** UI alias for `!isPlaceholder` until a dedicated `published` column exists. */
   published: boolean
+  isVisible: boolean
   order: number
   updatedAt: string
   screenshot: string

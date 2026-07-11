@@ -31,6 +31,7 @@ export const updateEducationSchema = z.object({
   highlights: z.array(z.string().min(1)).optional(),
   expectedGraduation: z.string().optional(),
   currentSemester: z.string().optional(),
+  isVisible: z.boolean().optional(),
   order: z.number().int().min(0).optional(),
 })
 

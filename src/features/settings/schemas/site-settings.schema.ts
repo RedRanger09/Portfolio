@@ -2,6 +2,21 @@ import { z } from 'zod'
 
 const imagePathSchema = z.string().min(1).max(500)
 
+const visibilityFlagsSchema = z.object({
+  showHero: z.boolean(),
+  showAbout: z.boolean(),
+  showJourney: z.boolean(),
+  showSkills: z.boolean(),
+  showProjects: z.boolean(),
+  showEducation: z.boolean(),
+  showCertificates: z.boolean(),
+  showResume: z.boolean(),
+  showBlog: z.boolean(),
+  showContact: z.boolean(),
+  showContactForm: z.boolean(),
+  showInterests: z.boolean(),
+})
+
 export const updateSiteSettingsSchema = z.object({
   siteTitle: z.string().min(1).max(160),
   siteDescription: z.string().min(1).max(500),
@@ -15,4 +30,4 @@ export const updateSiteSettingsSchema = z.object({
   linkedinDisplay: z.string().min(1).max(120),
   maintenanceMode: z.boolean().default(false),
   maintenanceMessage: z.string().max(500).nullable().optional(),
-})
+}).merge(visibilityFlagsSchema)

@@ -129,6 +129,7 @@ export async function getSkillGroups(): Promise<SkillGroup[]> {
   return withDbFallback(
     async () => {
       const rows = await prisma.skillCategory.findMany({
+        where: { isVisible: true },
         include: SKILL_CATEGORY_INCLUDE,
         orderBy: { order: 'asc' },
       })

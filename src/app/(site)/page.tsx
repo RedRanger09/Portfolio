@@ -1,5 +1,4 @@
 import type { ComponentType } from 'react'
-import { HOME_SECTION_ORDER } from '@/constants/sections'
 import type { SectionId } from '@/shared/types'
 import { HeroSection } from '@/features/portfolio/hero'
 import { AboutSection } from '@/features/portfolio/about'
@@ -11,6 +10,7 @@ import { CertificationsSection } from '@/features/portfolio/certifications'
 import { ResumeSection } from '@/features/portfolio/resume'
 import { ContactSection } from '@/features/portfolio/contact'
 import { LatestWritingSection } from '@/features/portfolio/blog'
+import { getPublicVisibility, getVisibleHomeSections } from '@/features/settings/visibility'
 
 /**
  * Every section component keyed by its `SectionId` — the single place that
@@ -28,16 +28,18 @@ const SECTION_COMPONENTS: Record<SectionId, ComponentType> = {
   contact: ContactSection,
 }
 
-/** Home page composition — maps over `HOME_SECTION_ORDER` so reordering sections is a one-line change in `constants/sections.ts`. */
-export default function HomePage() {
+/** Home page composition — section order filtered by SiteSettings visibility. */
+export default async function HomePage() {
+  const visibility = await getPublicVisibility()
+  const sections = getVisibleHomeSections(visibility)
+
   return (
     <>
-      {HOME_SECTION_ORDER.map((id) => {
+      {sections.map((id) => {
         const Section = SECTION_COMPONENTS[id]
         return <Section key={id} />
       })}
-      {/* Blog preview is intentionally not a scroll-spy homepage section. */}
-      <LatestWritingSection />
+      {visibility.showBlog ? <LatestWritingSection /> : null}
     </>
   )
 }

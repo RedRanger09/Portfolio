@@ -10,17 +10,23 @@ import {
   getPublishedBlogPosts,
   getRelatedBlogPosts,
 } from '@/features/portfolio/blog'
+import { getPublicVisibility } from '@/features/settings/visibility'
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>
 }
 
 export async function generateStaticParams() {
+  const visibility = await getPublicVisibility()
+  if (!visibility.showBlog) return []
   const slugs = await getAllPublishedBlogSlugs()
   return slugs.map((slug) => ({ slug }))
 }
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
+  const visibility = await getPublicVisibility()
+  if (!visibility.showBlog) return { robots: { index: false, follow: false } }
+
   const { slug } = await params
   const post = await getBlogPostBySlug(slug)
   if (!post) return {}
@@ -55,6 +61,9 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
 }
 
 export default async function BlogPostPage({ params }: BlogPostPageProps) {
+  const visibility = await getPublicVisibility()
+  if (!visibility.showBlog) notFound()
+
   const { slug } = await params
   const post = await getBlogPostBySlug(slug)
   if (!post) notFound()

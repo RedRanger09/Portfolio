@@ -8,6 +8,7 @@ export interface AdminJourneyListItem {
   icon: JourneyIcon
   accent: AccentColor
   isCurrent: boolean
+  isVisible: boolean
   order: number
   updatedAt: string
 }

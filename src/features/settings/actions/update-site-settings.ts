@@ -29,6 +29,18 @@ export async function updateSiteSettings(input: unknown): Promise<MutationResult
         linkedinDisplay: data.linkedinDisplay,
         maintenanceMode: data.maintenanceMode,
         maintenanceMessage: data.maintenanceMessage ?? null,
+        showHero: data.showHero,
+        showAbout: data.showAbout,
+        showJourney: data.showJourney,
+        showSkills: data.showSkills,
+        showProjects: data.showProjects,
+        showEducation: data.showEducation,
+        showCertificates: data.showCertificates,
+        showResume: data.showResume,
+        showBlog: data.showBlog,
+        showContact: data.showContact,
+        showContactForm: data.showContactForm,
+        showInterests: data.showInterests,
       },
     })
 

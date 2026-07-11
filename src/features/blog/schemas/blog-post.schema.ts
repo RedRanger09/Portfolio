@@ -31,6 +31,7 @@ export const updateBlogPostSchema = z.object({
   excerpt: z.string().min(1).max(500).optional(),
   content: z.string().min(1).max(100_000).optional(),
   status: blogPostStatusSchema.optional(),
+  isVisible: z.boolean().optional(),
   tags: z.array(z.string().min(1).max(40)).optional(),
   featuredImage: imagePathSchema.optional(),
   featuredImageMediaId: z.string().min(1).nullable().optional(),

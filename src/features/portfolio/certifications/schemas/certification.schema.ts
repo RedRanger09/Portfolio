@@ -23,6 +23,7 @@ export const updateCertificationSchema = z.object({
   credentialUrl: z.string().min(1, 'Credential URL is required.').optional(),
   verifyUrl: z.string().min(1, 'Verify URL is required.').optional(),
   image: z.string().min(1, 'Image is required.').optional(),
+  isVisible: z.boolean().optional(),
   order: z.number().int().min(0).optional(),
 })
 
