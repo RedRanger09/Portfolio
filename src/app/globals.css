@@ -95,11 +95,16 @@ button {
 
 img,
 picture,
-svg,
 canvas {
   display: block;
   max-width: 100%;
 }
+
+/* Icons set their own size — do not clamp SVG with max-width:100% (collapses brand marks). */
+svg {
+  display: block;
+}
+
 
 input,
 button,
