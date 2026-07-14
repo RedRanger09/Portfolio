@@ -8,15 +8,17 @@ A modern, full-stack portfolio platform built with **Next.js 15**, featuring a f
 
 ## 📸 Preview
 
-> *(Add screenshots after deployment)*
-
 ### Public Portfolio
 
-![Portfolio Screenshot](./docs/images/portfolio-home.png)
+![Portfolio home](./docs/images/portfolio-home.png)
 
 ### Admin Dashboard
 
-![Admin Dashboard](./docs/images/admin-dashboard.png)
+![Admin dashboard](./docs/images/admin-dashboard.png)
+
+### Architecture
+
+![Platform architecture](./docs/images/Architecture.png)
 
 ---
 
