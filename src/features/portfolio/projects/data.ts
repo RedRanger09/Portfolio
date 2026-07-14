@@ -22,7 +22,7 @@ function withCaseStudyDefaults(project: Omit<Project, keyof typeof DEFAULT_PROJE
 const projectsSectionContent: ProjectsSectionContent = {
   label: 'Projects',
   title: "Things I've actually built",
-  subtitle: 'Lumora is the main one. The rest are smaller learning projects — with more coming.',
+  subtitle: "A selection of projects I've built while learning, experimenting, and improving my skills",
   featuredEyebrow: 'Featured project',
   comingSoonLabel: 'Coming soon',
 }
