@@ -200,14 +200,15 @@ export function SettingsEditor({
           <AdminCard as="section" aria-label="Analytics">
             <p className="text-sm text-zinc-400">
               Public tracking uses the server env var <code className="text-zinc-300">GOOGLE_ANALYTICS_ID</code>.
-              Change it in Vercel / <code className="text-zinc-300">.env.local</code>, then redeploy.
+              Set it in Vercel / <code className="text-zinc-300">.env.local</code>, then restart or redeploy.
             </p>
             <p className="mt-4 text-sm text-zinc-300">
               Current measurement ID:{' '}
               <span className="font-medium text-white">{analyticsMeasurementId ?? 'Not configured'}</span>
             </p>
             <p className="mt-2 text-xs text-zinc-500">
-              Detailed reporting lives under Admin → Analytics (GA4 Data API credentials).
+              Admin → Analytics charts also need <code className="text-zinc-400">GA4_PROPERTY_ID</code> and a service
+              account with Analytics Data API access. Tracking alone does not populate that dashboard.
             </p>
           </AdminCard>
         ) : null}

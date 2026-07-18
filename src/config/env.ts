@@ -27,53 +27,95 @@
 import { z } from 'zod'
 import { SITE } from './site.config'
 
+/** Vercel/UI often set optional vars to `""` — treat blanks as unset. */
+const optionalString = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().optional(),
+)
+
+const optionalUrl = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().url().optional(),
+)
+
+const optionalPostgresUrl = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().url().startsWith('postgres').optional(),
+)
+
+const optionalEmail = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().email().optional(),
+)
+
+const optionalPath = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z.string().startsWith('/').optional(),
+)
+
+const optionalGaMeasurementId = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z
+    .string()
+    .regex(/^G-[A-Z0-9]+$/i, 'Must be a GA4 measurement ID (G-XXXXXXXX).')
+    .optional(),
+)
+
+const optionalGa4PropertyId = z.preprocess(
+  (value) => (typeof value === 'string' && value.trim() === '' ? undefined : value),
+  z
+    .string()
+    .regex(
+      /^\d+$/,
+      'Must be the numeric GA4 property ID from Admin → Property settings (not the G-XXXXXXXX measurement ID).',
+    )
+    .optional(),
+)
+
 const envSchema = z.object({
   // Public site URL — canonical links, OG metadata, sitemap generation.
   // Falls back to `SITE.siteUrl` (single source of truth) until this is
   // set in production.
-  NEXT_PUBLIC_APP_URL: z.string().url().optional(),
+  NEXT_PUBLIC_APP_URL: optionalUrl,
 
   // Pooled Postgres connection string (Neon's PgBouncer-compatible pooler).
   // Used by `lib/prisma.ts` at runtime. See
   // `docs/infrastructure/database-and-storage.md §1.2`.
-  DATABASE_URL: z.string().url().startsWith('postgres').optional(),
+  DATABASE_URL: optionalPostgresUrl,
   // Direct, unpooled Postgres connection string — required by Prisma
   // Migrate/introspection once `prisma/schema.prisma` has models. Not used
   // by the running application itself.
-  DIRECT_URL: z.string().url().startsWith('postgres').optional(),
+  DIRECT_URL: optionalPostgresUrl,
 
   // Clerk authentication — Admin Dashboard.
-  CLERK_SECRET_KEY: z.string().min(1).optional(),
-  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().min(1).optional(),
-  NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().startsWith('/').optional(),
-  NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().startsWith('/').optional(),
-  NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: z.string().startsWith('/').optional(),
-  NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: z.string().startsWith('/').optional(),
+  CLERK_SECRET_KEY: optionalString,
+  NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: optionalString,
+  NEXT_PUBLIC_CLERK_SIGN_IN_URL: optionalPath,
+  NEXT_PUBLIC_CLERK_SIGN_UP_URL: optionalPath,
+  NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL: optionalPath,
+  NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL: optionalPath,
   // Owner email allowed to access `/admin` and mutation Server Actions.
-  ADMIN_EMAIL: z.string().email().optional(),
+  ADMIN_EMAIL: optionalEmail,
 
   // Cloudinary — media uploads (server-side).
-  CLOUDINARY_CLOUD_NAME: z.string().min(1).optional(),
-  CLOUDINARY_API_KEY: z.string().min(1).optional(),
-  CLOUDINARY_API_SECRET: z.string().min(1).optional(),
+  CLOUDINARY_CLOUD_NAME: optionalString,
+  CLOUDINARY_API_KEY: optionalString,
+  CLOUDINARY_API_SECRET: optionalString,
 
   // @future Resend — contact form / resume-request emails.
-  RESEND_API_KEY: z.string().min(1).optional(),
-  RESEND_FROM_EMAIL: z.string().email().optional(),
+  RESEND_API_KEY: optionalString,
+  RESEND_FROM_EMAIL: optionalEmail,
 
   // @future AI Assistant (OpenAI — gpt-4o-mini + text-embedding-3-small).
-  OPENAI_API_KEY: z.string().min(1).optional(),
+  OPENAI_API_KEY: optionalString,
 
   // Google Analytics 4 — public measurement ID (G-XXXXXXXX) for client tracking.
-  GOOGLE_ANALYTICS_ID: z
-    .string()
-    .regex(/^G-[A-Z0-9]+$/i, 'Must be a GA4 measurement ID (G-XXXXXXXX).')
-    .optional(),
+  GOOGLE_ANALYTICS_ID: optionalGaMeasurementId,
   // Numeric GA4 property ID for the Data API (Admin → Property settings).
-  GA4_PROPERTY_ID: z.string().regex(/^\d+$/, 'Must be a numeric GA4 property ID.').optional(),
+  GA4_PROPERTY_ID: optionalGa4PropertyId,
   // Service account used by the Analytics Data API (server-only).
-  GOOGLE_SERVICE_ACCOUNT_EMAIL: z.string().email().optional(),
-  GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: z.string().min(1).optional(),
+  GOOGLE_SERVICE_ACCOUNT_EMAIL: optionalEmail,
+  GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY: optionalString,
 })
 
 /**

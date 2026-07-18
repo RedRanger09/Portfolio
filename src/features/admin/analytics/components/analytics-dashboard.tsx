@@ -57,9 +57,53 @@ function MetricList({
   )
 }
 
+function SetupChecklist({ data }: { data: AnalyticsDashboardData }) {
+  const steps = [
+    {
+      done: data.trackingConfigured,
+      label: 'Public tracking',
+      detail: data.trackingConfigured
+        ? `Measurement ID ${data.googleAnalyticsId} is installed on the public site.`
+        : 'Set GOOGLE_ANALYTICS_ID (G-XXXXXXXX) in .env.local / Vercel, then restart or redeploy.',
+    },
+    {
+      done: Boolean(data.propertyId),
+      label: 'GA4 property ID',
+      detail: data.propertyId
+        ? `Property ${data.propertyId} is set.`
+        : 'Set GA4_PROPERTY_ID to the numeric ID from GA4 Admin → Property settings.',
+    },
+    {
+      done: data.reportingConfigured,
+      label: 'Service account reporting',
+      detail: data.reportingConfigured
+        ? 'Data API credentials are present.'
+        : 'Set GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY, enable the Analytics Data API, and grant the service account Viewer on the GA4 property.',
+    },
+  ]
+
+  return (
+    <AdminCard as="section" aria-label="Setup status">
+      <h2 className="text-sm font-medium text-white">Setup status</h2>
+      <ul className="mt-4 space-y-3">
+        {steps.map((step) => (
+          <li key={step.label} className="flex items-start gap-3 text-sm">
+            <AdminBadge tone={step.done ? 'success' : 'warning'}>{step.done ? 'Ready' : 'Needed'}</AdminBadge>
+            <div className="min-w-0">
+              <p className="font-medium text-zinc-200">{step.label}</p>
+              <p className="mt-0.5 text-zinc-500">{step.detail}</p>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </AdminCard>
+  )
+}
+
 export function AnalyticsDashboard({ data }: AnalyticsDashboardProps) {
   const showEmptyState = data.status === 'not_configured' || data.status === 'error'
   const showNoTraffic = data.status === 'empty'
+  const showMetrics = data.status === 'live' || data.status === 'empty'
 
   return (
     <div className="space-y-6">
@@ -73,23 +117,29 @@ export function AnalyticsDashboard({ data }: AnalyticsDashboardProps) {
         action={statusBadge(data)}
       />
 
-      {showEmptyState && (
-        <EmptyState
-          icon={BarChart3}
-          title={data.status === 'not_configured' ? 'Analytics not configured' : 'Analytics unavailable'}
-          description={data.errorMessage ?? 'Google Analytics could not be loaded.'}
-        />
-      )}
+      {showEmptyState ? (
+        <>
+          <EmptyState
+            icon={BarChart3}
+            title={data.status === 'not_configured' ? 'Admin reporting not configured' : 'Analytics unavailable'}
+            description={
+              data.errorMessage ??
+              'Google Analytics could not be loaded. Public page-view tracking and admin reporting use separate credentials.'
+            }
+          />
+          <SetupChecklist data={data} />
+        </>
+      ) : null}
 
-      {showNoTraffic && (
+      {showNoTraffic ? (
         <EmptyState
           icon={BarChart3}
           title="No traffic yet"
           description={data.errorMessage ?? 'Google Analytics is connected, but no page views were recorded in this range.'}
         />
-      )}
+      ) : null}
 
-      {!showEmptyState && (
+      {showMetrics ? (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard label="Users" value={formatMetric(data.totalVisitors)} icon={Users} hint={data.dateRangeLabel ?? undefined} />
@@ -117,11 +167,7 @@ export function AnalyticsDashboard({ data }: AnalyticsDashboardProps) {
           </div>
 
           <div className="grid gap-4 lg:grid-cols-2">
-            <MetricList
-              title="Top pages"
-              emptyDescription="No page paths reported yet."
-              rows={data.topPages}
-            />
+            <MetricList title="Top pages" emptyDescription="No page paths reported yet." rows={data.topPages} />
             <AdminCard as="section" aria-label="Acquisition">
               <h2 className="text-sm font-medium text-white">Acquisition</h2>
               {data.acquisition.length === 0 ? (
@@ -158,7 +204,7 @@ export function AnalyticsDashboard({ data }: AnalyticsDashboardProps) {
             )}
           </AdminCard>
         </>
-      )}
+      ) : null}
     </div>
   )
 }

@@ -8,9 +8,8 @@ interface GoogleAnalyticsProps {
 
 /**
  * GA4 browser instrumentation for the public site.
- * Loads gtag once and records the initial page view; App Router navigations
- * that change the document URL are covered by GA4's enhanced measurement
- * history changes when enabled in the GA4 property (default).
+ * Loads gtag once and records the initial page view; App Router client
+ * navigations are handled by `GoogleAnalyticsPageViews`.
  */
 export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
   return (
@@ -19,9 +18,13 @@ export function GoogleAnalytics({ measurementId }: GoogleAnalyticsProps) {
       <Script id="ga4-config" strategy="afterInteractive">
         {`
           window.dataLayer = window.dataLayer || [];
-          function gtag(){dataLayer.push(arguments);}
+          function gtag(){window.dataLayer.push(arguments);}
+          window.gtag = gtag;
           gtag('js', new Date());
-          gtag('config', '${measurementId}', { send_page_view: true });
+          gtag('config', '${measurementId}', {
+            send_page_view: true,
+            anonymize_ip: true
+          });
         `}
       </Script>
     </>

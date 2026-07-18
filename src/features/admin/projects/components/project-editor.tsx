@@ -13,6 +13,7 @@ import {
   AdminTextInput,
   AdminTextarea,
   StringListField,
+  commitTechChip,
 } from '@/features/admin/shared'
 import { MediaUploadField } from '@/features/media/components/media-upload-field'
 import type { MediaFieldValue } from '@/features/media/types'
@@ -95,9 +96,9 @@ export function ProjectEditor({
   }
 
   function addTechnology(name: string) {
-    const trimmed = name.trim()
-    if (!trimmed || values.techStack.includes(trimmed)) return
-    updateValue('techStack', [...values.techStack, trimmed])
+    const next = commitTechChip(values.techStack, name)
+    if (next === values.techStack) return
+    updateValue('techStack', next)
     setTechInput('')
   }
 
@@ -167,11 +168,18 @@ export function ProjectEditor({
     setFormError(null)
     setFieldErrors({})
 
+    const techStack = commitTechChip(values.techStack, techInput)
+    if (techStack !== values.techStack) {
+      updateValue('techStack', techStack)
+      setTechInput('')
+    }
+    const payload = { ...values, techStack }
+
     startTransition(async () => {
       const result =
         mode === 'create'
-          ? await createProject(mapEditorValuesToCreateInput(values))
-          : await updateProject(mapEditorValuesToUpdateInput(projectId!, values))
+          ? await createProject(mapEditorValuesToCreateInput(payload))
+          : await updateProject(mapEditorValuesToUpdateInput(projectId!, payload))
 
       if (applyFieldErrors(result, setFieldErrors)) return
 
@@ -362,7 +370,12 @@ export function ProjectEditor({
         <AdminField label="Section title" name="techStackTitle" error={fieldErrors.techStackTitle}>
           <AdminTextInput id="techStackTitle" value={values.techStackTitle} hasError={Boolean(fieldErrors.techStackTitle)} onChange={(event) => updateValue('techStackTitle', event.target.value)} />
         </AdminField>
-        <AdminField label="Technologies" name="techStack" error={fieldErrors.techStack} hint="Press Enter to add. Existing database technologies are suggested.">
+        <AdminField
+          label="Technologies"
+          name="techStack"
+          error={fieldErrors.techStack}
+          hint="Type any technology name — suggestions are optional. Press Enter, click Add, or Save to commit."
+        >
           <div className="mt-3 space-y-3">
             <div className="space-y-2">
               {values.techStack.map((tech, index) => (
@@ -382,19 +395,33 @@ export function ProjectEditor({
                 </div>
               ))}
             </div>
-            <input
-              list="project-tech-suggestions"
-              value={techInput}
-              onChange={(event) => setTechInput(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter') {
-                  event.preventDefault()
-                  addTechnology(techInput)
-                }
-              }}
-              placeholder="Add technology"
-              className="w-full rounded-lg border border-white/[0.08] bg-background px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
-            />
+            <div className="flex gap-2">
+              <input
+                list="project-tech-suggestions"
+                value={techInput}
+                onChange={(event) => setTechInput(event.target.value)}
+                onBlur={() => {
+                  if (techInput.trim()) addTechnology(techInput)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter') {
+                    event.preventDefault()
+                    addTechnology(techInput)
+                  }
+                }}
+                placeholder="Add any technology"
+                className="w-full rounded-lg border border-white/[0.08] bg-background px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+              />
+              <button
+                type="button"
+                onClick={() => addTechnology(techInput)}
+                disabled={!techInput.trim()}
+                className="inline-flex h-10 shrink-0 items-center gap-2 rounded-lg border border-white/[0.08] px-3 text-sm text-zinc-300 hover:border-white/20 hover:text-white disabled:opacity-40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/60"
+              >
+                <Plus className="h-4 w-4" aria-hidden="true" />
+                Add
+              </button>
+            </div>
             <datalist id="project-tech-suggestions">
               {technologySuggestions.map((tech) => (
                 <option key={tech} value={tech} />

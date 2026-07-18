@@ -117,7 +117,7 @@ export async function getAnalyticsDashboardData(): Promise<AnalyticsDashboardDat
       trackingConfigured,
       reportingConfigured: false,
       errorMessage:
-        'Google Analytics reporting is not configured. Set GA4_PROPERTY_ID, GOOGLE_SERVICE_ACCOUNT_EMAIL, and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY, then grant the service account Viewer access on the GA4 property.',
+        'Admin dashboard reporting needs GA4_PROPERTY_ID plus a Google Cloud service account (GOOGLE_SERVICE_ACCOUNT_EMAIL and GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY) with Viewer access on the property. Public page-view tracking only needs GOOGLE_ANALYTICS_ID.',
     })
   }
 

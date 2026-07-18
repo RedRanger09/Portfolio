@@ -19,26 +19,65 @@ export function slugifyTechnologyName(name: string): string {
     .replace(/^-+|-+$/g, '')
 }
 
+async function ensureUniqueTechnologySlug(
+  tx: Prisma.TransactionClient,
+  baseSlug: string,
+  excludeName?: string,
+): Promise<string> {
+  let candidate = baseSlug || 'technology'
+  let suffix = 2
+
+  while (true) {
+    const existing = await tx.technology.findUnique({
+      where: { slug: candidate },
+      select: { name: true },
+    })
+
+    if (!existing || (excludeName && existing.name === excludeName)) {
+      return candidate
+    }
+
+    candidate = `${baseSlug || 'technology'}-${suffix}`
+    suffix += 1
+  }
+}
+
 /**
  * Resolves each name in `names` to its `Technology.id`, in the same
- * order, upserting a new row for any name that doesn't already exist.
- * Must be called with the transaction client of whichever mutation is
- * writing the `Project`/`SkillCategory` that references these names, so a
- * failed write can never leave an orphaned `Technology` row behind.
+ * order, creating any name that doesn't already exist (case-insensitive
+ * match reuses an existing row). Must be called with the transaction
+ * client of whichever mutation is writing the `Project`/`SkillCategory`.
  */
 export async function resolveTechnologyIds(tx: Prisma.TransactionClient, names: string[]): Promise<string[]> {
   const ids: string[] = []
-  for (const name of names) {
-    const technology = await tx.technology.upsert({
-      where: { name },
-      update: {},
-      create: {
+
+  for (const rawName of names) {
+    const name = rawName.trim()
+    if (!name) continue
+
+    const existing = await tx.technology.findFirst({
+      where: { name: { equals: name, mode: 'insensitive' } },
+      select: { id: true },
+    })
+
+    if (existing) {
+      ids.push(existing.id)
+      continue
+    }
+
+    const baseSlug = slugifyTechnologyName(name)
+    const slug = await ensureUniqueTechnologySlug(tx, baseSlug)
+
+    const technology = await tx.technology.create({
+      data: {
         name,
-        slug: slugifyTechnologyName(name),
+        slug,
         logoSlug: getTechLogoSlug(name),
       },
     })
+
     ids.push(technology.id)
   }
+
   return ids
 }
